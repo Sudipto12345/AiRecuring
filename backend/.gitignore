@@ -1,0 +1,8 @@
+.venv/
+models/
+test_assets/
+__pycache__/
+*.pyc
+.env
+storage/
+.pytest_cache/
