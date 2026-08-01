@@ -36,15 +36,12 @@ export const NAV: NavSection[] = [
       { label: "AI Interviews", href: "/interviews", icon: Video, module: "interviewFace" },
       { label: "Exam Management", href: "/exams", icon: ClipboardList, module: "examPortal" },
       { label: "CV Ranking", href: "/cv-ranking", icon: FileSearch, module: "cvRanking" },
-      { label: "AI Monitoring", href: "/monitoring", icon: ShieldCheck, module: "interviewFace" },
-      { label: "Reports & Analytics", href: "/reports", icon: BarChart3 },
       { label: "Jobs", href: "/jobs", icon: Briefcase, module: "cvRanking" },
     ],
   },
   {
     heading: "Tools",
     items: [
-      { label: "Integrations", href: "/integrations", icon: Plug },
       { label: "Question Bank", href: "/question-bank", icon: ListChecks, module: "examPortal" },
     ],
   },

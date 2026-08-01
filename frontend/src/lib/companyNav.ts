@@ -73,7 +73,6 @@ export const COMPANY_NAV: CompanyNavGroup[] = [
     icon: LayoutDashboard,
     items: [
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, real: true },
-      { label: "AI Assistant", href: "/ai-assistant", icon: Sparkles, real: true },
       { label: "Global Search", href: "/search", icon: FileSearch },
     ],
   },
@@ -105,18 +104,6 @@ export const COMPANY_NAV: CompanyNavGroup[] = [
     ],
   },
   {
-    id: "analytics",
-    label: "Analytics",
-    icon: BarChart3,
-    items: [
-      { label: "Reports & Analytics", href: "/reports", icon: BarChart3, real: true },
-      { label: "AI Insights", href: "/analytics/insights", icon: Brain },
-      { label: "Hiring Funnel", href: "/analytics/funnel", icon: Workflow, real: true },
-      { label: "Recruitment Forecast", href: "/analytics/forecast", icon: TrendingUp },
-      { label: "Hiring Trends", href: "/analytics/trends", icon: Activity },
-    ],
-  },
-  {
     id: "team",
     label: "Team",
     icon: Users,
@@ -125,7 +112,6 @@ export const COMPANY_NAV: CompanyNavGroup[] = [
       { label: "Roles", href: "/team/roles", icon: UserCheck },
       { label: "Departments", href: "/team/departments", icon: Building2 },
       { label: "Recruiters", href: "/team/recruiters", icon: GraduationCap },
-      { label: "Activity", href: "/team/activity", icon: Activity },
     ],
   },
   {
@@ -141,38 +127,13 @@ export const COMPANY_NAV: CompanyNavGroup[] = [
     ],
   },
   {
-    id: "automation",
-    label: "Automation",
-    icon: Workflow,
-    items: [
-      { label: "AI Workflows", href: "/automation", icon: Workflow },
-      { label: "Automation Rules", href: "/automation/rules", icon: Sliders },
-      { label: "Templates", href: "/automation/templates", icon: FileSpreadsheet },
-      { label: "Prompt Library", href: "/automation/prompts", icon: Wand2 },
-      { label: "Resume Parsing Rules", href: "/automation/parsing", icon: FileText },
-    ],
-  },
-  {
-    id: "integrations",
-    label: "Integrations",
-    icon: Plug,
-    items: [
-      { label: "Integrations", href: "/integrations", icon: Plug, real: true },
-      { label: "Calendar", href: "/integrations/calendar", icon: CalendarRange },
-      { label: "API Keys", href: "/integrations/api-keys", icon: KeyRound },
-      { label: "Webhooks", href: "/integrations/webhooks", icon: Network },
-    ],
-  },
-  {
     id: "organization",
     label: "Organization",
     icon: Building2,
     items: [
       { label: "Company Profile", href: "/organization", icon: Building2 },
-      { label: "Branches", href: "/organization/branches", icon: Network },
       { label: "Careers Page", href: "/organization/careers", icon: Globe },
       { label: "Branding", href: "/organization/branding", icon: Palette },
-      { label: "Domains", href: "/organization/domains", icon: Globe },
     ],
   },
   {
@@ -183,7 +144,6 @@ export const COMPANY_NAV: CompanyNavGroup[] = [
       { label: "Subscription", href: "/billing", icon: Wallet, real: true },
       { label: "AI Credits", href: "/billing/credits", icon: Coins, real: true },
       { label: "Usage", href: "/billing/usage", icon: Gauge, real: true },
-      { label: "Storage", href: "/billing/storage", icon: Cloud },
       { label: "Invoices", href: "/billing/invoices", icon: Receipt },
       { label: "Payments", href: "/billing/payments", icon: Wallet },
     ],
@@ -207,10 +167,6 @@ export const COMPANY_NAV: CompanyNavGroup[] = [
     items: [
       { label: "General", href: "/settings", icon: Settings, real: true },
       { label: "Preferences", href: "/settings/preferences", icon: Sliders },
-      { label: "AI Models", href: "/settings/ai-models", icon: Brain },
-      { label: "File Storage", href: "/settings/storage", icon: Database },
-      { label: "Backup", href: "/settings/backup", icon: Cloud },
-      { label: "Appearance", href: "/settings/appearance", icon: Palette },
     ],
   },
 ];
