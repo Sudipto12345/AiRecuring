@@ -23,9 +23,16 @@ class Settings(BaseSettings):
     # Dev mode exposes demo accounts + a public service-health probe on the login page.
     dev_mode: bool = True
 
-    llm_provider: str = "openai"
-    llm_model: str = "gpt-4o-mini"
+    llm_provider: str = "bedrock"
+    llm_model: str = "anthropic.claude-3-5-sonnet-20240620-v1:0"
     openai_api_key: str = ""
+
+    # AWS Credentials & Bedrock / S3 Settings
+    aws_access_key_id: str = ""
+    aws_secret_access_key: str = ""
+    aws_region: str = "us-east-1"
+    aws_bedrock_model: str = "anthropic.claude-3-5-sonnet-20240620-v1:0"
+    aws_s3_bucket: str = "airecruit-storage"
 
     smtp_host: str = ""
     smtp_port: int = 587

@@ -233,7 +233,7 @@ export default function LoginPage() {
       <div className="grid min-h-screen lg:grid-cols-2">
         {/* ── LEFT PANEL ── */}
         <div
-          className="relative flex items-center justify-center overflow-hidden px-6 py-12"
+          className="relative flex flex-col items-center justify-center overflow-y-auto px-4 py-12 sm:px-6 lg:px-8"
           style={{
             background:
               "linear-gradient(145deg, #eef2ff 0%, #ede9fe 35%, #f5f3ff 60%, #fdf4ff 100%)",
@@ -277,7 +277,7 @@ export default function LoginPage() {
 
           {/* Glass card */}
           <div
-            className={`air-glass-card air-form-card relative w-full max-w-[420px] rounded-2xl p-8 ${
+            className={`air-glass-card air-form-card w-full max-w-[420px] rounded-2xl p-6 sm:p-8 ${
               shake ? "air-shake" : ""
             }`}
           >
@@ -491,28 +491,9 @@ export default function LoginPage() {
           </div>
 
           {/* Social proof badges */}
-          <div
-            style={{
-              position: "absolute",
-              bottom: "24px",
-              left: "50%",
-              transform: "translateX(-50%)",
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              flexWrap: "nowrap",
-            }}
-          >
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3 px-4">
             <span className="air-badge">
-              <span
-                style={{
-                  width: "6px",
-                  height: "6px",
-                  borderRadius: "50%",
-                  background: "#10b981",
-                  flexShrink: 0,
-                }}
-              />
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
               Trusted by 500+ companies
             </span>
             <span className="air-badge">
@@ -523,23 +504,11 @@ export default function LoginPage() {
                 fill="none"
                 stroke="#6366f1"
                 strokeWidth={2.5}
+                className="shrink-0"
               >
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               </svg>
               SOC 2 compliant
-            </span>
-            <span className="air-badge" style={{ display: "none" }}>
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#f59e0b"
-                strokeWidth={2.5}
-              >
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
-              4.9 / 5 rating
             </span>
           </div>
         </div>

@@ -63,7 +63,7 @@ def _company_plan(name: str) -> str:
 
 def demo_account_list() -> list[dict]:
     """Public, password-included list for the dev login screen (no DB access)."""
-    accounts: list[dict] = [
+    return [
         {
             "label": "Platform Super Admin",
             "email": settings.superadmin_email,
@@ -74,17 +74,3 @@ def demo_account_list() -> list[dict]:
             "modules": [],
         }
     ]
-    for u in DEMO_USERS:
-        plan = _company_plan(u["company"])
-        accounts.append(
-            {
-                "label": u["label"],
-                "email": u["email"],
-                "password": DEMO_PASSWORD,
-                "role": u["role"],
-                "company": u["company"],
-                "plan": plan,
-                "modules": list(plan_definition(plan)["modules"]),
-            }
-        )
-    return accounts

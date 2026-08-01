@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from app.api.routes import (
     admin_ai,
     admin_audit,
+    admin_billing,
     admin_overview,
     admin_plans,
     admin_platform,
@@ -87,6 +88,7 @@ app.include_router(admin_system.router, prefix="/api")
 app.include_router(admin_audit.router, prefix="/api")
 app.include_router(admin_plans.router, prefix="/api")
 app.include_router(admin_platform.router, prefix="/api")
+app.include_router(admin_billing.router, prefix="/api")
 
 
 app.mount("/media", StaticFiles(directory=str(settings.storage_path)), name="media")

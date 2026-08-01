@@ -119,3 +119,50 @@ async def create_user(payload: CreateUserRequest, request: Request, admin_user: 
     return UserRow(id=str(user.id), name=user.name, email=user.email, role=user.role,
                    company_id=user.company_id, company_name=names.get(user.company_id or ""),
                    title=user.title, created_at=user.created_at)
+
+
+from app.models.rbac import SupportStaff
+
+class SupportStaffCreatePayload(UserRow):
+    department: str = "Support"
+    assigned_permissions: list[str] = []
+
+@router.get("/support-staff")
+async def list_support_staff():
+    return await SupportStaff.find_all().sort("-created_at").to_list()
+
+@router.post("/support-staff")
+async def create_support_staff(payload: dict, admin_user: User = Depends(super_admin)):
+    email = payload.get("email")
+    name = payload.get("name")
+    dept = payload.get("department", "Support")
+    perms = payload.get("assigned_permissions", [])
+
+    existing_user = await User.find_one(User.email == email)
+    if not existing_user:
+        existing_user = User(
+            email=email,
+            name=name,
+            password_hash=hash_password(payload.get("password", "support12345")),
+            role="support_staff",
+            title=f"Support ({dept})",
+        )
+        await existing_user.insert()
+
+    staff = SupportStaff(
+        user_id=str(existing_user.id),
+        email=email,
+        name=name,
+        department=dept,
+        assigned_permissions=perms,
+    )
+    await staff.insert()
+    return staff
+
+@router.delete("/support-staff/{id}")
+async def delete_support_staff(id: str):
+    staff = await SupportStaff.get(id)
+    if staff:
+        await staff.delete()
+    return {"status": "deleted"}
+

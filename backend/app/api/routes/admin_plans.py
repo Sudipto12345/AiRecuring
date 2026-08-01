@@ -29,6 +29,8 @@ async def list_plans():
 
 @router.post("", response_model=PlanOut)
 async def upsert_plan(payload: PlanUpsert, request: Request, admin_user: User = Depends(super_admin)):
+    if payload.price_monthly < 0:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Plan price cannot be negative")
     existing = await Plan.find_one(Plan.key == payload.key)
     if existing:
         existing.label = payload.label
