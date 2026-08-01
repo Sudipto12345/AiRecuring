@@ -12,17 +12,7 @@ from beanie import Document
 router = APIRouter(prefix="/admin/ai", tags=["super-admin-ai"], dependencies=[Depends(super_admin)])
 
 
-class PromptTemplate(Document):
-    name: str
-    description: str
-    template_text: str
-    variables: List[str]
-    is_active: bool = True
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-
-    class Settings:
-        name = "prompt_templates"
-
+from app.models.ai import PromptTemplate
 
 class PromptTemplateCreate(BaseModel):
     name: str
