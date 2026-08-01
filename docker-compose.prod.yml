@@ -1,0 +1,153 @@
+services:
+  mongodb:
+    image: mongo:7
+    container_name: airecruit-mongodb-prod
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: airecruit
+      MONGO_INITDB_ROOT_PASSWORD: airecruit_prod_password
+    volumes:
+      - mongo_prod_data:/data/db
+    networks:
+      - airecruit-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: airecruit-redis-prod
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_prod_data:/data
+    networks:
+      - airecruit-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  minio:
+    image: minio/minio:latest
+    container_name: airecruit-minio-prod
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: airecruit
+      MINIO_ROOT_PASSWORD: airecruit123
+    volumes:
+      - minio_prod_data:/data
+    networks:
+      - airecruit-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: airecruit-qdrant-prod
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_prod_data:/qdrant/storage
+    networks:
+      - airecruit-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: airecruit-backend-prod
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      MONGO_URI: mongodb://airecruit:airecruit_prod_password@mongodb:27017/?authSource=admin
+      MONGO_DB: airecruit
+      REDIS_URL: redis://redis:6379/0
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: airecruit
+      MINIO_SECRET_KEY: airecruit123
+      MINIO_BUCKET: airecruit
+      MINIO_SECURE: "false"
+      QDRANT_URL: http://qdrant:6333
+      JWT_SECRET: production-secret-key-change-me
+      JWT_ALG: HS256
+      ACCESS_TOKEN_TTL_MIN: 43200
+      SUPERADMIN_EMAIL: owner@airecruit.io
+      SUPERADMIN_PASSWORD: owner12345
+      SUPERADMIN_NAME: Platform Owner
+      FRONTEND_ORIGIN: http://localhost:3000
+      STORAGE_DIR: /app/storage
+      DEV_MODE: "false"
+    volumes:
+      - backend_prod_storage:/app/storage
+    networks:
+      - airecruit-network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: airecruit-frontend-prod
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api
+    networks:
+      - airecruit-network
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+networks:
+  airecruit-network:
+    driver: bridge
+
+volumes:
+  mongo_prod_data:
+  redis_prod_data:
+  minio_prod_data:
+  qdrant_prod_data:
+  backend_prod_storage:

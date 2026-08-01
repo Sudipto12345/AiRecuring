@@ -1,0 +1,156 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --color-brand-50: #eef2ff;
+  --color-brand-100: #e0e7ff;
+  --color-brand-200: #c7d2fe;
+  --color-brand-300: #a5b4fc;
+  --color-brand-400: #818cf8;
+  --color-brand-500: #6366f1;
+  --color-brand-600: #5b54e6;
+  --color-brand-700: #4f46e5;
+
+  --color-ink-900: #0f172a;
+  --color-ink-700: #334155;
+  --color-ink-500: #64748b;
+  --color-ink-400: #94a3b8;
+
+  --color-line: #eef0f4;
+  --color-canvas: #f7f8fb;
+}
+
+:root {
+  --gradient-brand: linear-gradient(135deg, #6366f1 0%, #8b5cf6 55%, #a855f7 100%);
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
+  --shadow-pop: 0 10px 30px -12px rgba(15, 23, 42, 0.25);
+}
+
+* {
+  border-color: var(--color-line);
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink-900);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.gradient-brand {
+  background-image: var(--gradient-brand);
+}
+
+.text-gradient-brand {
+  background-image: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.shadow-card {
+  box-shadow: var(--shadow-card);
+}
+
+.shadow-pop {
+  box-shadow: var(--shadow-pop);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d8dde6;
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #c2c9d6;
+  background-clip: content-box;
+}
+
+@keyframes drawerIn {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.animate-drawer {
+  animation: drawerIn 0.18s ease-out;
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-pop {
+  animation: popIn 0.14s ease-out;
+}
+
+/* admin panel tokens (data-theme on shell root) */
+[data-theme] {
+  --admin-bg: #f6f7fb;
+  --admin-surface: #ffffff;
+  --admin-surface-2: #f1f3f8;
+  --admin-elevated: #ffffff;
+  --admin-border: #e7e9f0;
+  --admin-border-strong: #d7dae3;
+  --admin-text: #0f172a;
+  --admin-muted: #5b6473;
+  --admin-faint: #95a0b4;
+  --admin-hover: #f1f5f9;
+  --admin-accent: #5b54e6;
+  --admin-accent-text: #4f46e5;
+  --admin-accent-soft: #eef2ff;
+  --admin-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
+  --admin-shadow-pop: 0 18px 48px -16px rgba(15, 23, 42, 0.30);
+}
+
+[data-theme="dark"] {
+  --admin-bg: #0a0d13;
+  --admin-surface: #11151d;
+  --admin-surface-2: #161b25;
+  --admin-elevated: #1a2030;
+  --admin-border: #242b39;
+  --admin-border-strong: #313a4c;
+  --admin-text: #e8ebf1;
+  --admin-muted: #99a3b6;
+  --admin-faint: #6a7488;
+  --admin-hover: #1a2130;
+  --admin-accent: #818cf8;
+  --admin-accent-text: #a5b4fc;
+  --admin-accent-soft: #1c2030;
+  --admin-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.5);
+  --admin-shadow-pop: 0 18px 48px -12px rgba(0, 0, 0, 0.7);
+}
+
+.a-bg { background-color: var(--admin-bg); }
+.a-surface { background-color: var(--admin-surface); }
+.a-surface-2 { background-color: var(--admin-surface-2); }
+.a-elevated { background-color: var(--admin-elevated); }
+.a-text { color: var(--admin-text); }
+.a-muted { color: var(--admin-muted); }
+.a-faint { color: var(--admin-faint); }
+.a-accent { color: var(--admin-accent-text); }
+.a-border { border-color: var(--admin-border); }
+.a-border-strong { border-color: var(--admin-border-strong); }
+.a-hover { transition: background-color 0.12s ease; }
+.a-hover:hover { background-color: var(--admin-hover); }
+.a-card {
+  background-color: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 1rem;
+  box-shadow: var(--admin-shadow);
+}
+.a-shadow-pop { box-shadow: var(--admin-shadow-pop); }
+.a-accent-soft { background-color: var(--admin-accent-soft); color: var(--admin-accent-text); }
+.a-divide > * + * { border-top: 1px solid var(--admin-border); }
+.a-input {
+  background-color: var(--admin-surface);
+  border: 1px solid var(--admin-border-strong);
+  color: var(--admin-text);
+  border-radius: 0.625rem;
+}
+.a-input::placeholder { color: var(--admin-faint); }
+.a-input:focus { outline: none; border-color: var(--admin-accent); box-shadow: 0 0 0 3px var(--admin-accent-soft); }
