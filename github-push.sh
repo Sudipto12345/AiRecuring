@@ -17,7 +17,7 @@ fi
 if ! git remote get-url "$REMOTE" >/dev/null 2>&1; then
   if [[ -z "${GITHUB_REPO:-}" ]]; then
     echo "Set your GitHub repo first:"
-    echo "  export GITHUB_REPO=https://github.com/Sudipto12345/AiRecuring"
+    echo "  export GITHUB_REPO=git@github.com:Sudipto12345/AiRecuring.git"
     echo "  ./github-push.sh"
     exit 1
   fi
