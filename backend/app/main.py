@@ -42,7 +42,7 @@ async def lifespan(app: FastAPI):
     await connect()
     await ensure_plans_seeded()
     await ensure_super_admin()
-    await ensure_demo_accounts()
+    # await ensure_demo_accounts()
     # minio + qdrant — skip if they're down, API should still start
     try:
         ensure_bucket()
