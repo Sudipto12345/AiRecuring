@@ -109,7 +109,7 @@ if [[ "${GITHUB_WATCH:-1}" != "0" ]]; then
     nohup "$ROOT/github-watch-push.sh" >>"$LOG_DIR/github-watch.log" 2>&1 &
     ok "GitHub auto-push enabled (logs: $LOG_DIR/github-watch.log)"
   else
-    echo "  GitHub watch skipped — run: export GITHUB_REPO=https://github.com/YOU/air.git"
+    echo "  GitHub watch skipped — run: export GITHUB_REPO=git@github.com:Sudipto12345/AiRecuring.git"
   fi
 fi
 
