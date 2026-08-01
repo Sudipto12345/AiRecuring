@@ -43,12 +43,6 @@ export default function LoginPage() {
           <div className="inline-flex justify-center w-full">
             <Logo />
           </div>
-          <h1 className="mt-4 text-2xl font-bold tracking-tight text-gray-900">
-            Welcome Back
-          </h1>
-          <p className="mt-2 text-sm text-gray-500">
-            Sign in to access your platform
-          </p>
         </div>
 
         <form onSubmit={submit} className="space-y-5">
@@ -107,24 +101,6 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-              />
-              <span className="text-sm text-gray-600">Remember me</span>
-            </label>
-            <Link
-              href="/forgot-password"
-              className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
-            >
-              Forgot password?
-            </Link>
-          </div>
-
           {error && (
             <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
               {error}
@@ -146,13 +122,6 @@ export default function LoginPage() {
             )}
           </button>
         </form>
-
-        <p className="mt-8 text-center text-sm text-gray-500">
-          Need an account?{" "}
-          <Link href="/register" className="font-semibold text-indigo-600 hover:text-indigo-500">
-            Create one now
-          </Link>
-        </p>
       </div>
     </div>
   );

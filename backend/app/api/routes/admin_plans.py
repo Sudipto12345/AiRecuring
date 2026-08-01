@@ -31,6 +31,11 @@ async def list_plans():
 async def upsert_plan(payload: PlanUpsert, request: Request, admin_user: User = Depends(super_admin)):
     if payload.price_monthly < 0:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Plan price cannot be negative")
+    
+    for k, v in payload.limits.items():
+        if isinstance(v, (int, float)) and v < -1:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Limit {k} cannot be negative unless -1 (unlimited)")
+
     existing = await Plan.find_one(Plan.key == payload.key)
     if existing:
         existing.label = payload.label

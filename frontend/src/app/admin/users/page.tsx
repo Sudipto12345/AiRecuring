@@ -24,6 +24,9 @@ export default function PlatformUsersPage() {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
 
+  const [alertState, setAlertState] = useState<{ open: boolean; title: string; message: string }>({ open: false, title: "", message: "" });
+  const [confirmState, setConfirmState] = useState<{ open: boolean; title: string; message: string; onConfirm: () => void }>({ open: false, title: "", message: "", onConfirm: () => {} });
+
   const load = useCallback(async () => {
     const [u, c] = await Promise.all([
       api<AdminUserRow[]>("/admin/users"),
@@ -39,13 +42,43 @@ export default function PlatformUsersPage() {
   }, [load]);
 
   async function resetPassword(id: string) {
-    const res = await api<{ temp_password: string }>(`/admin/users/${id}/reset-password`, { method: "POST" });
-    window.alert(`Temporary password:\n\n${res.temp_password}`);
+    try {
+      const res = await api<{ temp_password: string }>(`/admin/users/${id}/reset-password`, { method: "POST" });
+      setAlertState({
+        open: true,
+        title: "Password Reset",
+        message: `Temporary password:\n\n${res.temp_password}`,
+      });
+    } catch (e) {
+      setAlertState({ open: true, title: "Error", message: "Failed to reset password." });
+    }
   }
 
   async function changeRole(id: string, role: string) {
-    const updated = await api<AdminUserRow>(`/admin/users/${id}/role?role=${role}`, { method: "PATCH" });
-    setUsers((rows) => rows.map((u) => (u.id === id ? updated : u)));
+    try {
+      const updated = await api<AdminUserRow>(`/admin/users/${id}/role?role=${role}`, { method: "PATCH" });
+      setUsers((rows) => rows.map((u) => (u.id === id ? updated : u)));
+    } catch (e) {
+      setAlertState({ open: true, title: "Error", message: "Failed to change role." });
+    }
+  }
+
+  async function removeUser(id: string) {
+    setConfirmState({
+      open: true,
+      title: "Remove User",
+      message: "Are you sure you want to completely remove this user? This action cannot be undone.",
+      onConfirm: async () => {
+        try {
+          await api(`/admin/users/${id}`, { method: "DELETE" });
+          setUsers((rows) => rows.filter((u) => u.id !== id));
+          setConfirmState({ ...confirmState, open: false });
+        } catch (e) {
+          setConfirmState({ ...confirmState, open: false });
+          setAlertState({ open: true, title: "Error", message: "Failed to remove user." });
+        }
+      }
+    });
   }
 
   const columns: Column<AdminUserRow>[] = [
@@ -92,6 +125,7 @@ export default function PlatformUsersPage() {
                 icon: ShieldCheck,
                 onClick: () => changeRole(r.id, role),
               })),
+              { label: "Remove User", icon: X, onClick: () => removeUser(r.id) },
             ]}
           />
         </div>
@@ -132,6 +166,50 @@ export default function PlatformUsersPage() {
             load();
           }}
         />
+      )}
+
+      {/* Alert Modal */}
+      {alertState.open && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setAlertState({ ...alertState, open: false })} />
+          <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">{alertState.title}</h3>
+            <p className="mb-6 whitespace-pre-wrap text-sm text-gray-600">{alertState.message}</p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setAlertState({ ...alertState, open: false })}
+                className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-200"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Modal */}
+      {confirmState.open && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setConfirmState({ ...confirmState, open: false })} />
+          <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">{confirmState.title}</h3>
+            <p className="mb-6 whitespace-pre-wrap text-sm text-gray-600">{confirmState.message}</p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmState({ ...confirmState, open: false })}
+                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmState.onConfirm}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -187,7 +265,7 @@ function CreateUserModal({
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="a-elevated a-shadow-pop animate-pop relative w-full max-w-lg rounded-2xl border a-border p-6">
+      <div className="a-elevated a-shadow-pop animate-pop relative w-full max-w-lg rounded-2xl border a-border p-6 bg-white">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-sm font-semibold a-text">Create a new user</h3>
           <button onClick={onClose} className="a-hover rounded-lg p-1 a-muted">
@@ -205,7 +283,7 @@ function CreateUserModal({
             <input type="password" required minLength={6} value={form.password} onChange={set("password")} className="a-input h-10 w-full px-3 text-sm" placeholder="••••••" />
           </Field>
           <Field label="Role">
-            <select value={form.role} onChange={set("role")} className="a-input h-10 w-full px-3 text-sm">
+            <select value={form.role} onChange={set("role")} className="a-input h-10 w-full px-3 text-sm bg-white">
               <option value="super_admin">Super Admin</option>
               <option value="company_admin">Company Admin</option>
               <option value="hr">HR</option>
@@ -214,7 +292,7 @@ function CreateUserModal({
           </Field>
           {form.role !== "super_admin" && (
             <Field label="Company">
-              <select required value={form.company_id} onChange={set("company_id")} className="a-input h-10 w-full px-3 text-sm">
+              <select required value={form.company_id} onChange={set("company_id")} className="a-input h-10 w-full px-3 text-sm bg-white">
                 <option value="">Select company...</option>
                 {companies.map((c) => (
                   <option key={c.id} value={c.id}>

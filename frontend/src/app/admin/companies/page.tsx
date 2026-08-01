@@ -33,6 +33,10 @@ export default function AdminCompaniesPage() {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
 
+  const [alertState, setAlertState] = useState<{ open: boolean; title: string; message: string }>({ open: false, title: "", message: "" });
+  const [confirmState, setConfirmState] = useState<{ open: boolean; title: string; message: string; onConfirm: () => void; danger?: boolean }>({ open: false, title: "", message: "", onConfirm: () => {} });
+  const [promptState, setPromptState] = useState<{ open: boolean; title: string; message: string; defaultValue: string; onConfirm: (val: string) => void }>({ open: false, title: "", message: "", defaultValue: "", onConfirm: () => {} });
+
   const load = useCallback(async () => {
     const [c, p] = await Promise.all([
       api<CompanyRow[]>("/admin/companies"),
@@ -54,11 +58,21 @@ export default function AdminCompaniesPage() {
   }
 
   async function addCredits(id: string) {
-    const raw = window.prompt("How many AI credits to add? (1 credit = $0.01)", "500");
-    if (!raw) return;
-    const credits = parseInt(raw, 10);
-    if (!Number.isFinite(credits) || credits <= 0) return;
-    patch(await api<CompanyRow>(`/admin/companies/${id}/credits`, { method: "POST", body: { credits } }));
+    setPromptState({
+      open: true,
+      title: "Add AI Credits",
+      message: "How many AI credits to add? (1 credit = $0.01)",
+      defaultValue: "500",
+      onConfirm: async (val) => {
+        const credits = parseInt(val, 10);
+        if (!Number.isFinite(credits) || credits <= 0) return;
+        try {
+          patch(await api<CompanyRow>(`/admin/companies/${id}/credits`, { method: "POST", body: { credits } }));
+        } catch (e) {
+          setAlertState({ open: true, title: "Error", message: "Failed to add credits." });
+        }
+      }
+    });
   }
 
   async function toggleStatus(id: string) {
@@ -66,8 +80,16 @@ export default function AdminCompaniesPage() {
   }
 
   async function resetPassword(id: string) {
-    const res = await api<{ temp_password: string }>(`/admin/companies/${id}/reset-password`, { method: "POST" });
-    window.alert(`Temporary password for the company admin:\n\n${res.temp_password}\n\nShare it securely.`);
+    try {
+      const res = await api<{ temp_password: string }>(`/admin/companies/${id}/reset-password`, { method: "POST" });
+      setAlertState({
+        open: true,
+        title: "Password Reset",
+        message: `Temporary password for the company admin:\n\n${res.temp_password}\n\nShare it securely.`,
+      });
+    } catch (e) {
+      setAlertState({ open: true, title: "Error", message: "Failed to reset password." });
+    }
   }
 
   async function impersonate(row: CompanyRow) {
@@ -78,9 +100,20 @@ export default function AdminCompaniesPage() {
   }
 
   async function remove(row: CompanyRow) {
-    if (!window.confirm(`Delete "${row.name}" and ALL its data? This cannot be undone.`)) return;
-    await api(`/admin/companies/${row.id}`, { method: "DELETE" });
-    setCompanies((rows) => rows.filter((r) => r.id !== row.id));
+    setConfirmState({
+      open: true,
+      title: "Delete Company",
+      message: `Delete "${row.name}" and ALL its data? This cannot be undone.`,
+      danger: true,
+      onConfirm: async () => {
+        try {
+          await api(`/admin/companies/${row.id}`, { method: "DELETE" });
+          setCompanies((rows) => rows.filter((r) => r.id !== row.id));
+        } catch (e) {
+          setAlertState({ open: true, title: "Error", message: "Failed to delete company." });
+        }
+      }
+    });
   }
 
   function openDetail(row: CompanyRow) {
@@ -213,6 +246,95 @@ export default function AdminCompaniesPage() {
             load();
           }}
         />
+      )}
+
+      {/* Alert Modal */}
+      {alertState.open && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setAlertState({ ...alertState, open: false })} />
+          <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">{alertState.title}</h3>
+            <p className="mb-6 whitespace-pre-wrap text-sm text-gray-600">{alertState.message}</p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setAlertState({ ...alertState, open: false })}
+                className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-200"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Modal */}
+      {confirmState.open && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setConfirmState({ ...confirmState, open: false })} />
+          <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">{confirmState.title}</h3>
+            <p className="mb-6 whitespace-pre-wrap text-sm text-gray-600">{confirmState.message}</p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmState({ ...confirmState, open: false })}
+                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  confirmState.onConfirm();
+                  setConfirmState({ ...confirmState, open: false });
+                }}
+                className={`rounded-lg px-4 py-2 text-sm font-medium text-white ${confirmState.danger ? "bg-red-600 hover:bg-red-700" : "bg-indigo-600 hover:bg-indigo-700"}`}
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Prompt Modal */}
+      {promptState.open && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setPromptState({ ...promptState, open: false })} />
+          <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">{promptState.title}</h3>
+            <p className="mb-4 whitespace-pre-wrap text-sm text-gray-600">{promptState.message}</p>
+            <input
+              type="text"
+              autoFocus
+              defaultValue={promptState.defaultValue}
+              id="prompt-input"
+              className="a-input mb-6 h-10 w-full px-3 text-sm"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  promptState.onConfirm(e.currentTarget.value);
+                  setPromptState({ ...promptState, open: false });
+                }
+              }}
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setPromptState({ ...promptState, open: false })}
+                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const val = (document.getElementById("prompt-input") as HTMLInputElement).value;
+                  promptState.onConfirm(val);
+                  setPromptState({ ...promptState, open: false });
+                }}
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

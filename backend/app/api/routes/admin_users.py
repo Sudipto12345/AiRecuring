@@ -135,6 +135,20 @@ async def create_user(payload: CreateUserRequest, request: Request, admin_user: 
                    company_id=user.company_id, company_name=names.get(user.company_id or ""),
                    title=user.title, created_at=user.created_at)
 
+@router.delete("/users/{user_id}")
+async def delete_user(user_id: str, request: Request, admin_user: User = Depends(super_admin)):
+    target = await User.get(user_id)
+    if not target:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
+    # Prevent self deletion
+    if str(admin_user.id) == str(target.id):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Cannot delete yourself")
+    
+    await target.delete()
+    await audit.record(admin_user, "user.delete", target_type="user", target_id=user_id,
+                       company_id=target.company_id, ip=_client_ip(request), meta={"email": target.email, "role": target.role})
+    return {"status": "deleted"}
+
 
 from app.models.rbac import SupportStaff
 

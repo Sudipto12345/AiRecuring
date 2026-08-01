@@ -39,6 +39,7 @@ export default function PlansPage() {
   const [plans, setPlans] = useState<AdminPlan[]>([]);
   const [editing, setEditing] = useState<AdminPlan | null>(null);
   const [creating, setCreating] = useState(false);
+  const [confirmState, setConfirmState] = useState<{ open: boolean; title: string; message: string; onConfirm: () => void }>({ open: false, title: "", message: "", onConfirm: () => {} });
 
   const load = useCallback(async () => {
     setPlans(await api<AdminPlan[]>("/admin/plan-catalog"));
@@ -49,9 +50,21 @@ export default function PlansPage() {
   }, [load]);
 
   async function remove(key: string) {
-    if (!window.confirm(`Delete plan "${key}"?`)) return;
-    await api(`/admin/plan-catalog/${key}`, { method: "DELETE" });
-    load();
+    setConfirmState({
+      open: true,
+      title: "Delete Plan",
+      message: `Are you sure you want to delete plan "${key}"?`,
+      onConfirm: async () => {
+        try {
+          await api(`/admin/plan-catalog/${key}`, { method: "DELETE" });
+          load();
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setConfirmState({ ...confirmState, open: false });
+        }
+      }
+    });
   }
 
   return (
@@ -131,6 +144,31 @@ export default function PlansPage() {
           }}
         />
       )}
+
+      {/* Confirm Modal */}
+      {confirmState.open && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setConfirmState({ ...confirmState, open: false })} />
+          <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">{confirmState.title}</h3>
+            <p className="mb-6 whitespace-pre-wrap text-sm text-gray-600">{confirmState.message}</p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmState({ ...confirmState, open: false })}
+                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmState.onConfirm}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -189,7 +227,7 @@ function PlanBuilder({ plan, onClose, onSaved }: { plan: AdminPlan | null; onClo
           </label>
           <label className="block">
             <span className="mb-1 block text-xs font-medium a-muted">Price / mo (USD)</span>
-            <input type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} className="a-input h-10 w-full px-3 text-sm" />
+            <input type="number" min="0" value={price} onChange={(e) => setPrice(Number(e.target.value))} className="a-input h-10 w-full px-3 text-sm" />
           </label>
         </div>
 
@@ -220,6 +258,7 @@ function PlanBuilder({ plan, onClose, onSaved }: { plan: AdminPlan | null; onClo
                 <span className="mb-1 block text-xs a-muted">{LIMIT_LABEL[k]}</span>
                 <input
                   type="number"
+                  min="-1"
                   value={limits[k] as number}
                   onChange={(e) => setLimits((l) => ({ ...l, [k]: Number(e.target.value) }))}
                   className="a-input h-9 w-full px-3 text-sm"

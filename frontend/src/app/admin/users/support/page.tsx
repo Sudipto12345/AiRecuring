@@ -36,6 +36,9 @@ export default function SupportStaffPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [alertState, setAlertState] = useState<{ open: boolean; title: string; message: string }>({ open: false, title: "", message: "" });
+  const [confirmState, setConfirmState] = useState<{ open: boolean; title: string; message: string; onConfirm: () => void }>({ open: false, title: "", message: "", onConfirm: () => {} });
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -78,13 +81,21 @@ export default function SupportStaffPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm("Remove this support staff member?")) return;
-    try {
-      await api(`/admin/users/support-staff/${id}`, { method: "DELETE" });
-      load();
-    } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Delete failed");
-    }
+    setConfirmState({
+      open: true,
+      title: "Remove Support Staff",
+      message: "Are you sure you want to remove this support staff member?",
+      onConfirm: async () => {
+        try {
+          await api(`/admin/users/support-staff/${id}`, { method: "DELETE" });
+          setRows((rows) => rows.filter((r) => r.id !== id));
+          setConfirmState({ ...confirmState, open: false });
+        } catch (err) {
+          setConfirmState({ ...confirmState, open: false });
+          setAlertState({ open: true, title: "Error", message: err instanceof ApiError ? err.message : "Delete failed" });
+        }
+      }
+    });
   }
 
   const columns: Column<SupportStaffRow>[] = [
@@ -201,6 +212,50 @@ export default function SupportStaffPage() {
               <button onClick={() => setCreating(false)} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600">Cancel</button>
               <button onClick={handleCreate} disabled={busy || !name || !email} className="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50">
                 {busy ? "Saving…" : "Create Staff Account"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Alert Modal */}
+      {alertState.open && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setAlertState({ ...alertState, open: false })} />
+          <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">{alertState.title}</h3>
+            <p className="mb-6 whitespace-pre-wrap text-sm text-gray-600">{alertState.message}</p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setAlertState({ ...alertState, open: false })}
+                className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-200"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Modal */}
+      {confirmState.open && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setConfirmState({ ...confirmState, open: false })} />
+          <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">{confirmState.title}</h3>
+            <p className="mb-6 whitespace-pre-wrap text-sm text-gray-600">{confirmState.message}</p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmState({ ...confirmState, open: false })}
+                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmState.onConfirm}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+              >
+                Confirm
               </button>
             </div>
           </div>
