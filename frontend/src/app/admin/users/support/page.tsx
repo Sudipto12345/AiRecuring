@@ -77,7 +77,7 @@ export default function SupportStaffPage() {
     }
   }
 
-  async function handleDelete(id: str) {
+  async function handleDelete(id: string) {
     if (!window.confirm("Remove this support staff member?")) return;
     try {
       await api(`/admin/users/support-staff/${id}`, { method: "DELETE" });

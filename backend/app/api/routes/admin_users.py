@@ -59,6 +59,21 @@ async def user_activity():
         for a in logs
     ]
 
+from app.models.session import LoginSession
+
+@router.get("/users/sessions")
+async def list_sessions():
+    sessions = await LoginSession.find_all().sort("-created_at").limit(100).to_list()
+    return sessions
+
+@router.delete("/users/sessions/{session_id}")
+async def revoke_session(session_id: str):
+    session = await LoginSession.get(session_id)
+    if session:
+        session.status = "revoked"
+        await session.save()
+    return {"status": "revoked"}
+
 
 @router.post("/users/{user_id}/reset-password", response_model=ResetPasswordOut)
 async def reset_user_password(user_id: str, request: Request, admin_user: User = Depends(super_admin)):

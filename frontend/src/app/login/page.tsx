@@ -230,291 +230,163 @@ export default function LoginPage() {
         }
       `}</style>
 
-      <div className="grid min-h-screen lg:grid-cols-2">
-        {/* ── LEFT PANEL ── */}
+      <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50/60 px-4 py-12">
+        {/* Glass card */}
         <div
-          className="relative flex flex-col items-center justify-center overflow-y-auto px-4 py-12 sm:px-6 lg:px-8"
-          style={{
-            background:
-              "linear-gradient(145deg, #eef2ff 0%, #ede9fe 35%, #f5f3ff 60%, #fdf4ff 100%)",
-          }}
+          className={`air-glass-card air-form-card w-full max-w-[400px] rounded-2xl p-6 sm:p-8 ${
+            shake ? "air-shake" : ""
+          }`}
         >
-          {/* Animated background blobs */}
-          <div
-            className="air-blob-one pointer-events-none absolute -left-24 -top-24 h-96 w-96 rounded-full opacity-50"
-            style={{
-              background:
-                "radial-gradient(circle at center, #818cf8 0%, #6366f1 40%, transparent 70%)",
-              filter: "blur(60px)",
-            }}
-          />
-          <div
-            className="air-blob-two pointer-events-none absolute -right-20 top-1/3 h-80 w-80 rounded-full opacity-40"
-            style={{
-              background:
-                "radial-gradient(circle at center, #a78bfa 0%, #8b5cf6 40%, transparent 70%)",
-              filter: "blur(55px)",
-            }}
-          />
-          <div
-            className="air-blob-three pointer-events-none absolute -bottom-20 left-1/3 h-72 w-72 rounded-full opacity-35"
-            style={{
-              background:
-                "radial-gradient(circle at center, #c084fc 0%, #a855f7 40%, transparent 70%)",
-              filter: "blur(50px)",
-            }}
-          />
-
-          {/* Subtle mesh grid overlay */}
-          <div
-            className="pointer-events-none absolute inset-0 opacity-[0.03]"
-            style={{
-              backgroundImage:
-                "linear-gradient(#6366f1 1px, transparent 1px), linear-gradient(90deg, #6366f1 1px, transparent 1px)",
-              backgroundSize: "40px 40px",
-            }}
-          />
-
-          {/* Glass card */}
-          <div
-            className={`air-glass-card air-form-card w-full max-w-[420px] rounded-2xl p-6 sm:p-8 ${
-              shake ? "air-shake" : ""
-            }`}
-          >
-            {/* Logo + tagline */}
-            <div className="mb-7">
+          {/* Logo + tagline */}
+          <div className="mb-6 text-center">
+            <div className="inline-block">
               <Logo />
-              <div className="mt-5">
-                <h1
-                  className="text-2xl font-bold tracking-tight"
-                  style={{ color: "#0f172a" }}
-                >
-                  Welcome back
-                </h1>
-                <p className="mt-1 text-sm" style={{ color: "#64748b" }}>
-                  Sign in to your recruiting workspace.
-                </p>
+            </div>
+            <div className="mt-4">
+              <h1 className="text-xl font-bold tracking-tight text-slate-900">
+                Sign in to AIRecruit
+              </h1>
+              <p className="mt-1 text-xs text-slate-500">
+                Enter your workspace credentials to continue
+              </p>
+            </div>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={submit} className="space-y-4">
+            {/* Email field */}
+            <div>
+              <label
+                htmlFor="email"
+                className="mb-1.5 block text-xs font-semibold text-slate-700"
+              >
+                Work Email
+              </label>
+              <div className="air-input-wrap">
+                <span className="air-input-icon">
+                  <Mail size={16} />
+                </span>
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@company.com"
+                  className="air-input"
+                  autoComplete="email"
+                />
               </div>
             </div>
 
-            {/* Form */}
-            <form onSubmit={submit} className="space-y-4">
-              {/* Email field */}
-              <div>
-                <label
-                  htmlFor="email"
-                  className="mb-1.5 block text-sm font-medium"
-                  style={{ color: "#334155" }}
-                >
-                  Work email
-                </label>
-                <div className="air-input-wrap">
-                  <span className="air-input-icon">
-                    <Mail size={16} />
-                  </span>
-                  <input
-                    id="email"
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@company.com"
-                    className="air-input"
-                    autoComplete="email"
-                  />
-                </div>
-              </div>
-
-              {/* Password field */}
-              <div>
-                <label
-                  htmlFor="password"
-                  className="mb-1.5 block text-sm font-medium"
-                  style={{ color: "#334155" }}
-                >
-                  Password
-                </label>
-                <div className="air-input-wrap">
-                  <span className="air-input-icon">
-                    <Lock size={16} />
-                  </span>
-                  <input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="air-input air-input-pr"
-                    autoComplete="current-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    style={{
-                      position: "absolute",
-                      right: "12px",
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      color: "#94a3b8",
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      padding: "4px",
-                      borderRadius: "6px",
-                      display: "flex",
-                      alignItems: "center",
-                      transition: "background 0.15s",
-                    }}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                  >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Remember me + forgot password */}
-              <div className="flex items-center justify-between pt-0.5">
-                <label
-                  className="flex cursor-pointer items-center gap-2"
-                  style={{ userSelect: "none" }}
-                >
-                  <input
-                    type="checkbox"
-                    className="air-cb"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                  />
-                  <span className="text-sm" style={{ color: "#64748b" }}>
-                    Remember me
-                  </span>
-                </label>
-                <Link
-                  href="/forgot-password"
-                  className="text-sm font-medium transition-colors hover:underline"
-                  style={{ color: "#6366f1" }}
-                >
-                  Forgot password?
-                </Link>
-              </div>
-
-              {/* Error state */}
-              {error && (
-                <div
+            {/* Password field */}
+            <div>
+              <label
+                htmlFor="password"
+                className="mb-1.5 block text-xs font-semibold text-slate-700"
+              >
+                Password
+              </label>
+              <div className="air-input-wrap">
+                <span className="air-input-icon">
+                  <Lock size={16} />
+                </span>
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="air-input air-input-pr"
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
                   style={{
+                    position: "absolute",
+                    right: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "#94a3b8",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: "4px",
+                    borderRadius: "6px",
                     display: "flex",
-                    alignItems: "flex-start",
-                    gap: "10px",
-                    background: "rgba(254, 226, 226, 0.7)",
-                    border: "1px solid rgba(252, 165, 165, 0.6)",
-                    borderRadius: "12px",
-                    padding: "10px 14px",
+                    alignItems: "center",
                   }}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  <svg
-                    style={{ marginTop: "2px", flexShrink: 0, color: "#ef4444" }}
-                    width="16"
-                    height="16"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M12 8v4m0 4h.01" />
-                  </svg>
-                  <p className="text-sm" style={{ color: "#b91c1c" }}>
-                    {error}
-                  </p>
-                </div>
-              )}
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
 
-              {/* Submit button */}
-              <button
-                type="submit"
-                disabled={busy}
-                className="air-btn-shimmer"
-                style={{
-                  marginTop: "4px",
-                  display: "flex",
-                  width: "100%",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "10px",
-                  borderRadius: "12px",
-                  padding: "12px 20px",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  color: "white",
-                  border: "none",
-                  cursor: busy ? "not-allowed" : "pointer",
-                  opacity: busy ? 0.7 : 1,
-                  minHeight: "46px",
-                }}
-              >
-                {busy ? (
-                  <>
-                    <span className="air-spinner" />
-                    <span>Signing in…</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles size={15} style={{ opacity: 0.85 }} />
-                    <span>Sign in</span>
-                    <ArrowRight size={15} style={{ opacity: 0.85 }} />
-                  </>
-                )}
-              </button>
-            </form>
-
-            {/* Demo accounts */}
-            <DemoAccounts onPick={pickDemo} busy={busy} />
-
-            {/* Register link */}
-            <p className="mt-6 text-center text-sm" style={{ color: "#64748b" }}>
-              New here?{" "}
+            {/* Remember me + forgot password */}
+            <div className="flex items-center justify-between pt-0.5">
+              <label className="flex cursor-pointer items-center gap-2 select-none">
+                <input
+                  type="checkbox"
+                  className="air-cb"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                />
+                <span className="text-xs text-slate-600">Remember me</span>
+              </label>
               <Link
-                href="/register"
-                className="font-semibold transition-colors hover:underline"
-                style={{ color: "#4f46e5" }}
+                href="/forgot-password"
+                className="text-xs font-medium text-indigo-600 hover:underline"
               >
-                Create a company account
+                Forgot password?
               </Link>
-            </p>
+            </div>
 
-            {/* Dev system health */}
-            {isDev && (
-              <div className="mt-6">
-                <SystemHealth />
+            {/* Error state */}
+            {error && (
+              <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50/80 p-3 text-xs text-rose-700">
+                <svg className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 8v4m0 4h.01" />
+                </svg>
+                <p>{error}</p>
               </div>
             )}
-          </div>
 
-          {/* Social proof badges */}
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3 px-4">
-            <span className="air-badge">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
-              Trusted by 500+ companies
-            </span>
-            <span className="air-badge">
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#6366f1"
-                strokeWidth={2.5}
-                className="shrink-0"
-              >
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              </svg>
-              SOC 2 compliant
-            </span>
-          </div>
+            {/* Submit button */}
+            <button
+              type="submit"
+              disabled={busy}
+              className="air-btn-shimmer flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl text-xs font-semibold text-white transition disabled:opacity-60"
+            >
+              {busy ? (
+                <>
+                  <span className="air-spinner" />
+                  <span>Signing in…</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles size={14} className="opacity-80" />
+                  <span>Sign in</span>
+                  <ArrowRight size={14} className="opacity-80" />
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Demo accounts */}
+          <DemoAccounts onPick={pickDemo} busy={busy} />
+
+          {/* Register link */}
+          <p className="mt-6 text-center text-xs text-slate-500">
+            Need an account?{" "}
+            <Link href="/register" className="font-semibold text-indigo-600 hover:underline">
+              Create account
+            </Link>
+          </p>
         </div>
-
-        {/* ── RIGHT PANEL ── */}
-        <AuthHero />
       </div>
     </>
   );

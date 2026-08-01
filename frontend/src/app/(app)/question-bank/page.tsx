@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, Lock, Plus, Trash2 } from "lucide-react";
+import { CheckCircle2, Download, Lock, Plus, Trash2, Upload, X } from "lucide-react";
 
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/Badge";
@@ -19,6 +19,9 @@ export default function QuestionBankPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importJson, setImportJson] = useState("");
+  const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     if (!enabled) {
@@ -40,6 +43,35 @@ export default function QuestionBankPage() {
   async function remove(id: string) {
     await api(`/questions/${id}`, { method: "DELETE" });
     setQuestions((q) => q.filter((x) => x.id !== id));
+  }
+
+  const handleExportCSV = () => {
+    const headers = "ID,Question,Category,Difficulty\n";
+    const csvRows = questions.map((r) => `"${r.id}","${r.text.replace(/"/g, '""')}","${r.category || ""}","${r.difficulty}"`).join("\n");
+    const blob = new Blob([headers + csvRows], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "tenant-mcq-question-bank.csv";
+    a.click();
+  };
+
+  async function handleBulkImport() {
+    setBusy(true);
+    try {
+      const parsed = JSON.parse(importJson);
+      if (!Array.isArray(parsed)) throw new Error("JSON payload must be an array of questions.");
+      for (const item of parsed) {
+        await api("/questions", { method: "POST", body: item });
+      }
+      setImporting(false);
+      setImportJson("");
+      load();
+    } catch (err: any) {
+      alert(`Bulk Import Error: ${err.message}`);
+    } finally {
+      setBusy(false);
+    }
   }
 
   if (!enabled) {
@@ -65,9 +97,17 @@ export default function QuestionBankPage() {
         title="Question Bank"
         subtitle="Build assessment questions for the exam portal."
         actions={
-          <Button onClick={() => setOpen(true)}>
-            <Plus className="h-4 w-4" /> Add Question
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={handleExportCSV}>
+              <Download className="h-4 w-4" /> CSV Export
+            </Button>
+            <Button variant="secondary" onClick={() => setImporting(true)}>
+              <Upload className="h-4 w-4" /> Bulk Import
+            </Button>
+            <Button onClick={() => setOpen(true)}>
+              <Plus className="h-4 w-4" /> Add Question
+            </Button>
+          </div>
         }
       />
 
@@ -113,6 +153,23 @@ export default function QuestionBankPage() {
       </div>
 
       <QuestionModal open={open} onClose={() => setOpen(false)} onCreated={() => load()} />
+
+      {importing && (
+        <Modal open={importing} onClose={() => setImporting(false)} title="Bulk Import MCQ Questions (JSON)" size="max-w-xl">
+          <div className="space-y-4">
+            <textarea
+              value={importJson}
+              onChange={(e) => setImportJson(e.target.value)}
+              placeholder='[{"text": "Sample MCQ?", "options": ["Option A", "Option B", "Option C", "Option D"], "correct_index": 0, "difficulty": "easy"}]'
+              className="h-44 w-full rounded-xl border border-line p-3 font-mono text-xs focus:border-brand-500 focus:outline-none"
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setImporting(false)}>Cancel</Button>
+              <Button onClick={handleBulkImport} disabled={busy || !importJson}>{busy ? "Importing…" : "Execute Bulk Import"}</Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

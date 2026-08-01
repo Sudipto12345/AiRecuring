@@ -1,49 +1,117 @@
-from fastapi import APIRouter, Depends
+from datetime import datetime, timezone
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
 
 from app.api.deps import super_admin
 from app.core.config import settings
-from app.core.pricing import PRICING
-from app.db.qdrant import CANDIDATES, JOBS, get_qdrant
-from app.services.platform_metrics import ai_usage_breakdown
+from app.services.bedrock import BOTO3_AVAILABLE
+from app.models.credit import CreditTxn
+from beanie import Document
 
 router = APIRouter(prefix="/admin/ai", tags=["super-admin-ai"], dependencies=[Depends(super_admin)])
 
 
+class PromptTemplate(Document):
+    name: str
+    description: str
+    template_text: str
+    variables: List[str]
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    class Settings:
+        name = "prompt_templates"
+
+
+class PromptTemplateCreate(BaseModel):
+    name: str
+    description: str
+    template_text: str
+    variables: List[str]
+
+
 @router.get("/usage")
-async def usage():
-    return await ai_usage_breakdown()
-
-
-@router.get("/providers")
-async def providers():
-    openai_on = bool(settings.openai_api_key)
+async def ai_usage_realtime():
+    txns = await CreditTxn.find_all().to_list()
+    total_tokens = sum(t.cost * 1000 for t in txns)  # Proxy for tokens for now
+    total_spend = sum(t.cost for t in txns)
     return {
-        "active_provider": settings.llm_provider,
-        "active_model": settings.llm_model,
-        "providers": [
-            {"key": "openai", "label": "OpenAI", "configured": openai_on, "status": "online" if openai_on else "not configured", "real": True},
-            {"key": "ollama", "label": "Ollama (local)", "configured": False, "status": "idle", "real": False},
-            {"key": "gemini", "label": "Google Gemini", "configured": False, "status": "idle", "real": False},
-            {"key": "claude", "label": "Anthropic Claude", "configured": False, "status": "idle", "real": False},
-            {"key": "deepseek", "label": "DeepSeek", "configured": False, "status": "idle", "real": False},
-            {"key": "azure", "label": "Azure OpenAI", "configured": False, "status": "idle", "real": False},
-        ],
-        "models": [{"model": m, "input_per_1k": p[0], "output_per_1k": p[1]} for m, p in PRICING.items()],
-        "embedding_model": settings.embedding_model,
-        "embedding_dim": settings.embedding_dim,
+        "total_tokens_used": total_tokens,
+        "total_spend_usd": total_spend,
+        "recent_transactions": [
+            {
+                "id": str(t.id),
+                "company_id": t.company_id,
+                "action": t.action,
+                "cost": t.cost,
+                "created_at": t.created_at
+            }
+            for t in sorted(txns, key=lambda x: x.created_at, reverse=True)[:50]
+        ]
     }
 
 
-@router.get("/vector")
-async def vector():
-    client = get_qdrant()
-    collections = []
-    available = client is not None
-    if client is not None:
-        try:
-            for name in (CANDIDATES, JOBS):
-                info = client.get_collection(name)
-                collections.append({"name": name, "points": info.points_count or 0, "vectors": info.points_count or 0})
-        except Exception:
-            available = False
-    return {"available": available, "url": settings.qdrant_url, "collections": collections, "dim": settings.embedding_dim}
+@router.get("/providers")
+async def ai_providers():
+    return {
+        "active_provider": "aws_bedrock" if BOTO3_AVAILABLE and settings.aws_access_key_id else "none",
+        "providers": [
+            {
+                "key": "aws_bedrock",
+                "label": "AWS Bedrock",
+                "configured": BOTO3_AVAILABLE and bool(settings.aws_access_key_id),
+                "status": "online" if BOTO3_AVAILABLE and bool(settings.aws_access_key_id) else "offline",
+                "models": ["anthropic.claude-v2", "anthropic.claude-3-sonnet-20240229-v1:0", "amazon.titan-text-express-v1"]
+            },
+            {
+                "key": "anthropic",
+                "label": "Anthropic API",
+                "configured": False,
+                "status": "offline",
+                "models": ["claude-3-opus-20240229", "claude-3-sonnet-20240229"]
+            },
+            {
+                "key": "openai",
+                "label": "OpenAI",
+                "configured": bool(settings.openai_api_key),
+                "status": "online" if settings.openai_api_key else "offline",
+                "models": ["gpt-4-turbo", "gpt-3.5-turbo"]
+            }
+        ]
+    }
+
+
+@router.get("/templates")
+async def list_templates():
+    return await PromptTemplate.find_all().to_list()
+
+
+@router.post("/templates")
+async def create_template(payload: PromptTemplateCreate):
+    t = PromptTemplate(
+        name=payload.name,
+        description=payload.description,
+        template_text=payload.template_text,
+        variables=payload.variables
+    )
+    await t.insert()
+    return t
+
+
+@router.put("/templates/{id}/toggle")
+async def toggle_template(id: str):
+    t = await PromptTemplate.get(id)
+    if not t:
+        raise HTTPException(status_code=404, detail="Template not found")
+    t.is_active = not t.is_active
+    await t.save()
+    return t
+
+
+@router.delete("/templates/{id}")
+async def delete_template(id: str):
+    t = await PromptTemplate.get(id)
+    if t:
+        await t.delete()
+    return {"status": "deleted"}

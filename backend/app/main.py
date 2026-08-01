@@ -29,6 +29,8 @@ from app.api.routes import (
     questions,
     system,
     team,
+    admin_communication,
+    admin_security,
 )
 from app.core.config import settings
 from app.db.mongo import connect, disconnect
@@ -85,11 +87,13 @@ app.include_router(admin_users.router, prefix="/api")
 app.include_router(admin_ai.router, prefix="/api")
 app.include_router(admin_recruitment.router, prefix="/api")
 app.include_router(admin_system.router, prefix="/api")
+app.include_router(admin_security.router, prefix="/api")
 app.include_router(admin_audit.router, prefix="/api")
 app.include_router(admin_plans.router, prefix="/api")
 app.include_router(admin_platform.router, prefix="/api")
 app.include_router(admin_billing.router, prefix="/api")
-
+app.include_router(admin_communication.router, prefix="/api")
+app.include_router(admin_security.router, prefix="/api")
 
 app.mount("/media", StaticFiles(directory=str(settings.storage_path)), name="media")
 
