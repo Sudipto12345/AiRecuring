@@ -13,7 +13,7 @@ export interface ActionItem {
   separatorBefore?: boolean;
 }
 
-export function ActionMenu({ items, label }: { items: ActionItem[]; label?: string }) {
+export function ActionMenu({ items, label, trigger }: { items: ActionItem[]; label?: string; trigger?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -27,14 +27,20 @@ export function ActionMenu({ items, label }: { items: ActionItem[]; label?: stri
   }, [open]);
 
   return (
-    <div className="relative" ref={ref}>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="a-hover flex h-8 items-center gap-1 rounded-lg border a-border px-2 a-muted"
-      >
-        <MoreHorizontal className="h-4 w-4" />
-        {label && <span className="text-xs">{label}</span>}
-      </button>
+    <div className="relative inline-block" ref={ref}>
+      {trigger ? (
+        <div onClick={() => setOpen((v) => !v)} className="cursor-pointer">
+          {trigger}
+        </div>
+      ) : (
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="a-hover flex h-8 items-center gap-1 rounded-lg border a-border px-2 a-muted"
+        >
+          <MoreHorizontal className="h-4 w-4" />
+          {label && <span className="text-xs">{label}</span>}
+        </button>
+      )}
       {open && (
         <div className="a-elevated a-shadow-pop animate-pop absolute right-0 z-50 mt-1 w-52 overflow-hidden rounded-xl border a-border py-1">
           {items.map((it, i) => {

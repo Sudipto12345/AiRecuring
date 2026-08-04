@@ -1,5 +1,17 @@
-import { useRef } from "react";
-import { Sparkles } from "lucide-react";
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CheckCircle2, Download, Lock, Plus, Sparkles, Trash2, Upload, X } from "lucide-react";
+
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Input, Label, Select } from "@/components/ui/Field";
+import { Modal } from "@/components/ui/Modal";
+import { api, ApiError, getToken } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import type { Question } from "@/lib/types";
 
 export default function QuestionBankPage() {
   const { hasModule } = useAuth();
