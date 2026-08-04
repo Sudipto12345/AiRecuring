@@ -113,7 +113,7 @@ export default function ReportsPage() {
       </Card>
 
       <div className="rounded-2xl bg-amber-50/70 p-4 text-sm text-amber-800">
-        <span className="font-semibold">Important Note:</span> AI scoring, CV ranking, proctoring, facial analysis and automated
+        <span className="font-semibold">Important Note:</span> AI scoring, CV ranking, proctoring, and automated
         reports are decision-support tools. They should not be treated as legally final hiring decisions. HR or authorized
         reviewers must manually review reports, videos and candidate data before making final employment decisions.
       </div>

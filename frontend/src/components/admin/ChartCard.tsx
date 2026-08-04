@@ -37,15 +37,17 @@ interface ChartCardProps {
   action?: React.ReactNode;
 }
 
-const axisStyle = { fontSize: 11, fill: "var(--admin-faint)" };
+const axisStyle = { fontSize: 10, fill: "#64748b" };
 
 function tooltipStyle() {
   return {
-    backgroundColor: "var(--admin-elevated)",
-    border: "1px solid var(--admin-border)",
-    borderRadius: 10,
+    backgroundColor: "var(--admin-surface)",
+    border: "1px solid var(--admin-border-strong)",
+    borderRadius: 12,
     color: "var(--admin-text)",
-    fontSize: 12,
+    fontSize: 11,
+    boxShadow: "var(--admin-shadow-pop)",
+    padding: "8px 12px",
   };
 }
 
@@ -57,28 +59,28 @@ export function ChartCard({
   data,
   series = [],
   xKey = "label",
-  height = 240,
+  height = 220,
   action,
 }: ChartCardProps) {
   return (
-    <div className="a-card p-5">
+    <div className="a-card rounded-2xl p-4 sm:p-5 backdrop-blur-xl transition-all duration-200">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold a-text">{title}</h3>
+            <h3 className="text-[13px] font-semibold tracking-tight a-text">{title}</h3>
             {draft && <PreviewChip />}
           </div>
-          {subtitle && <p className="mt-0.5 text-xs a-faint">{subtitle}</p>}
+          {subtitle && <p className="mt-0.5 text-[11px] a-faint">{subtitle}</p>}
         </div>
         {action}
       </div>
       <ResponsiveContainer width="100%" height={height}>
         {type === "area" ? (
-          <AreaChart data={data} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+          <AreaChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
             <defs>
               {series.map((s) => (
                 <linearGradient key={s.key} id={`grad-${s.key}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={s.color} stopOpacity={0.35} />
+                  <stop offset="0%" stopColor={s.color} stopOpacity={0.25} />
                   <stop offset="100%" stopColor={s.color} stopOpacity={0} />
                 </linearGradient>
               ))}
@@ -92,7 +94,7 @@ export function ChartCard({
             ))}
           </AreaChart>
         ) : type === "line" ? (
-          <LineChart data={data} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+          <LineChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--admin-border)" vertical={false} />
             <XAxis dataKey={xKey} tick={axisStyle} axisLine={false} tickLine={false} />
             <YAxis tick={axisStyle} axisLine={false} tickLine={false} width={40} />
@@ -102,7 +104,7 @@ export function ChartCard({
             ))}
           </LineChart>
         ) : type === "bar" ? (
-          <BarChart data={data} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+          <BarChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--admin-border)" vertical={false} />
             <XAxis dataKey={xKey} tick={axisStyle} axisLine={false} tickLine={false} />
             <YAxis tick={axisStyle} axisLine={false} tickLine={false} width={40} />

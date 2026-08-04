@@ -33,7 +33,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ id: st
       </button>
 
       <div className="a-card flex flex-wrap items-center gap-4 p-5">
-        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--admin-accent-soft)] text-lg font-bold a-accent">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl a-accent-soft text-lg font-bold a-accent">
           {detail.name.slice(0, 2).toUpperCase()}
         </span>
         <div className="flex-1">
@@ -43,7 +43,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ id: st
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="rounded-lg bg-[var(--admin-accent-soft)] px-3 py-1.5 text-sm font-medium a-accent">
+          <span className="rounded-lg a-accent-soft px-3 py-1.5 text-sm font-medium a-accent">
             {PLAN_LABELS[detail.plan] ?? detail.plan}
           </span>
           <span className={cn("rounded-lg px-3 py-1.5 text-sm font-medium", detail.status === "active" ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500")}>
@@ -60,7 +60,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ id: st
             onClick={() => setTab(t)}
             className={cn(
               "flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm",
-              tab === t ? "border-[var(--admin-accent)] a-accent font-medium" : "border-transparent a-muted hover:a-text",
+              tab === t ? "border-indigo-600 a-accent font-medium" : "border-transparent a-muted hover:a-text",
             )}
           >
             {t}
@@ -70,21 +70,44 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ id: st
       </div>
 
       {tab === "Overview" && (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          {[
-            { label: "Users", value: detail.counts.users, icon: Users },
-            { label: "Jobs", value: detail.counts.jobs, icon: Briefcase },
-            { label: "Candidates", value: detail.counts.candidates, icon: Users },
-            { label: "Interviews", value: detail.counts.interviews, icon: Video },
-          ].map((s) => (
-            <div key={s.label} className="a-card p-4">
-              <div className="flex items-center gap-2 a-faint">
-                <s.icon className="h-4 w-4" />
-                <span className="text-xs">{s.label}</span>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            {[
+              { label: "Users", value: detail.counts.users, icon: Users },
+              { label: "Jobs", value: detail.counts.jobs, icon: Briefcase },
+              { label: "Candidates", value: detail.counts.candidates, icon: Users },
+              { label: "Interviews", value: detail.counts.interviews, icon: Video },
+            ].map((s) => (
+              <div key={s.label} className="a-card p-4">
+                <div className="flex items-center gap-2 a-faint">
+                  <s.icon className="h-4 w-4" />
+                  <span className="text-xs">{s.label}</span>
+                </div>
+                <p className="mt-1 text-2xl font-semibold a-text tabular-nums">{s.value}</p>
               </div>
-              <p className="mt-1 text-2xl font-semibold a-text tabular-nums">{s.value}</p>
+            ))}
+          </div>
+
+          <div className="a-card p-5">
+            <p className="mb-3 text-sm font-semibold a-text">Workspace identity</p>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {[
+                ["Workspace slug", detail.slug],
+                ["Industry", detail.industry ?? "—"],
+                ["Registration number", detail.registration_number ?? "—"],
+                ["Legal entity", detail.legal_entity_name ?? "—"],
+                ["Incorporation country", detail.incorporation_country ?? "—"],
+                ["Business address", detail.business_address ?? "—"],
+                ["Verification", detail.verification_status ?? "verified"],
+                ["Verified at", detail.verified_at ? new Date(detail.verified_at).toLocaleDateString() : "—"],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-xl border a-border p-3">
+                  <p className="text-xs a-faint">{label}</p>
+                  <p className="mt-1 text-sm font-medium a-text">{String(value)}</p>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       )}
 
@@ -116,7 +139,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ id: st
           </div>
           <div className="mt-4 flex flex-wrap gap-1.5">
             {detail.modules.map((m) => (
-              <span key={m} className="rounded-md bg-[var(--admin-accent-soft)] px-2 py-0.5 text-xs a-accent">{m}</span>
+              <span key={m} className="rounded-md a-accent-soft px-2 py-0.5 text-xs a-accent">{m}</span>
             ))}
           </div>
         </div>

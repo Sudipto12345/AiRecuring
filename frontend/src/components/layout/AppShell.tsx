@@ -8,30 +8,45 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 import { getToken } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { useTheme } from "@/lib/theme";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const { theme } = useTheme();
   const { session, loading } = useAuth();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    if (!loading && !session && !getToken()) router.replace("/login");
-  }, [loading, session, router]);
+    if (loading) return;
 
-  useEffect(() => {
-    if (!loading && session?.user.role === "super_admin") router.replace("/admin");
+    if (!session || !getToken()) {
+      if (typeof window !== "undefined") {
+        window.location.replace("/login");
+      } else {
+        router.replace("/login");
+      }
+      return;
+    }
+
+    if (session.user.role === "super_admin") {
+      if (typeof window !== "undefined") {
+        window.location.replace("/admin");
+      } else {
+        router.replace("/admin");
+      }
+    }
   }, [loading, session, router]);
 
   if (loading || !session) {
     return (
-      <div className="flex h-screen items-center justify-center bg-canvas">
+      <div data-theme={theme} className="flex h-screen items-center justify-center bg-canvas">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand-200 border-t-brand-600" />
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-canvas">
+    <div data-theme={theme} className="flex h-screen overflow-hidden bg-canvas">
       <div className="hidden lg:block">
         <Sidebar />
       </div>

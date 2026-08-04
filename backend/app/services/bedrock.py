@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from typing import Any, Dict, Optional
 from app.core.config import settings
 
@@ -10,6 +11,13 @@ try:
     BOTO3_AVAILABLE = True
 except ImportError:
     BOTO3_AVAILABLE = False
+
+
+def _parse_json_text(text: str) -> dict[str, Any]:
+    cleaned = text.strip()
+    cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\s*```$", "", cleaned)
+    return json.loads(cleaned)
 
 
 class BedrockService:
@@ -31,9 +39,79 @@ class BedrockService:
     def is_available(self) -> bool:
         return self._client is not None
 
+    def _invoke_text(self, prompt: str, max_tokens: int = 700) -> str:
+        if self._client is None:
+            raise RuntimeError("AWS Bedrock client is not initialized")
+        body = json.dumps({
+            "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": max_tokens,
+            "messages": [{"role": "user", "content": prompt}],
+        })
+        try:
+            response = self._client.invoke_model(
+                body=body,
+                modelId=self.model_id,
+                accept="application/json",
+                contentType="application/json",
+            )
+            res_body = json.loads(response.get("body").read())
+            return res_body.get("content", [{}])[0].get("text", "")
+        except Exception as err:
+            logger.warning(f"AWS Bedrock model invocation failed ({self.model_id}): {err}")
+            raise err
+
+    async def parse_resume_with_bedrock(self, text_content: str) -> Dict[str, Any] | None:
+        prompt = (
+            "You are an expert resume parser. Extract CV fields from the following resume text. "
+            "Return ONLY a valid JSON object with the following keys: "
+            "name, email, phone, location, education (highest degree), experience_years (calculate total years of professional experience as a number), "
+            "skills (list of technical skills), soft_skills (list of soft skills). "
+            "Do not invent values; only use information explicitly found in the text."
+            f"\n\nRESUME:\n{text_content[:8000]}"
+        )
+        try:
+            output_text = self._invoke_text(prompt, max_tokens=600)
+            data = _parse_json_text(output_text)
+            cleaned = {k: v for k, v in data.items() if v not in (None, "", [], {})}
+            return cleaned or None
+        except Exception as err:
+            logger.warning(f"Bedrock resume parsing failed: {err}")
+            return None
+
+    async def score_cv_with_bedrock(self, text_content: str, job_description: str) -> Dict[str, Any] | None:
+        prompt = (
+            "You are an expert AI recruitment analyst. Analyze the following resume against the job description. "
+            "Output ONLY a valid JSON object. Do not include any conversational text or markdown formatting. "
+            "Keys required: "
+            "skill (0-100 score based on technical match), experience (0-100 score based on years and relevance), "
+            "education (0-100 score), culture (0-100 score), overall (0-100 weighted average), matched_skills (list of strings), "
+            "missing_skills (list of strings), summary (brief 2-sentence summary), strengths (list of strings), risks (list of strings).\n\n"
+            f"JOB DESCRIPTION:\n{job_description}\n\nRESUME:\n{text_content[:6000]}"
+        )
+        try:
+            output_text = self._invoke_text(prompt, max_tokens=900)
+            data = _parse_json_text(output_text)
+            return {
+                "scores": {
+                    "skill": float(data.get("skill", 0)),
+                    "experience": float(data.get("experience", 0)),
+                    "education": float(data.get("education", 0)),
+                    "culture": float(data.get("culture", 0)),
+                },
+                "overall_score": round(float(data.get("overall", 0)), 1),
+                "matched_skills": data.get("matched_skills", []),
+                "missing_skills": data.get("missing_skills", []),
+                "ai_summary": data.get("summary"),
+                "strengths": data.get("strengths", []),
+                "risks": data.get("risks", []),
+                "scored_by": "bedrock",
+            }
+        except Exception as err:
+            logger.warning(f"Bedrock CV scoring failed: {err}")
+            return None
+
     async def parse_and_rank_cv(self, text_content: str, job_description: str) -> Dict[str, Any]:
         """Verify if text is a valid CV/Resume and calculate skills & experience scores."""
-        # Non-CV Pre-filtering detection
         lower = text_content.lower()
         non_cv_keywords = ["invoice", "quotation", "purchase order", "receipt", "billing statement", "tax invoice"]
         if any(kw in lower for kw in non_cv_keywords) and not any(r in lower for r in ["resume", "curriculum vitae", "experience", "education", "skills"]):
@@ -50,29 +128,22 @@ class BedrockService:
         if self.is_available():
             try:
                 prompt = (
-                    f"Analyze this candidate CV text against the job description.\n"
+                    f"You are an expert ATS (Applicant Tracking System). Analyze this candidate CV text against the job description.\n"
                     f"Job Description: {job_description}\n\n"
                     f"CV Text: {text_content[:4000]}\n\n"
-                    f"Return JSON with keys: is_valid_cv (bool), rejection_reason (str or null), "
-                    f"candidate_name (str), overall_score (0-100), skills (list of str), "
-                    f"total_experience_years (number), missing_fields (list of str)."
+                    f"Return ONLY a valid JSON object with the following keys:\n"
+                    f"- is_valid_cv (boolean: true if this looks like a resume/CV, false otherwise)\n"
+                    f"- rejection_reason (string or null: if is_valid_cv is false, explain why)\n"
+                    f"- candidate_name (string)\n"
+                    f"- overall_score (number 0-100: how well they fit the job)\n"
+                    f"- skills (list of strings: extracted technical skills)\n"
+                    f"- total_experience_years (number: calculate total years of professional experience)\n"
+                    f"- missing_fields (list of strings)"
                 )
-                body = json.dumps({
-                    "anthropic_version": "bedrock-2023-05-31",
-                    "max_tokens": 1000,
-                    "messages": [{"role": "user", "content": prompt}]
-                })
-                response = self._client.invoke_model(
-                    body=body,
-                    modelId=self.model_id,
-                    accept="application/json",
-                    contentType="application/json"
-                )
-                res_body = json.loads(response.get("body").read())
-                output_text = res_body.get("content", [{}])[0].get("text", "")
-                return json.loads(output_text)
+                output_text = self._invoke_text(prompt, max_tokens=1000)
+                return _parse_json_text(output_text)
             except Exception as err:
-                logger.error(f"Bedrock invocation failed, falling back: {err}")
+                logger.error(f"Bedrock invocation failed: {err}")
 
         # Deterministic fallback calculation
         words = set(lower.split())
@@ -88,42 +159,6 @@ class BedrockService:
             "skills": ["JavaScript", "Python", "Problem Solving", "Communication"],
             "total_experience_years": 4.5,
             "missing_fields": ["Portfolio URL"] if "portfolio" not in lower else [],
-        }
-
-    async def analyze_video_proctoring(self, frame_metadata: Dict[str, Any]) -> Dict[str, Any]:
-        """Analyze first 4-5 mins of proctoring telemetry for eye gaze, face presence, and fraud risk."""
-        eye_losses = frame_metadata.get("eye_gaze_loss_count", 0)
-        multi_faces = frame_metadata.get("multi_face_detected_count", 0)
-        no_face_seconds = frame_metadata.get("no_face_seconds", 0)
-
-        fraud_score = min(100, (eye_losses * 10) + (multi_faces * 25) + (no_face_seconds * 3))
-        fraud_risk = "low" if fraud_score < 25 else "medium" if fraud_score < 60 else "high"
-
-        if self.is_available():
-            try:
-                prompt = (
-                    f"Evaluate 5-minute proctoring session telemetry:\n"
-                    f"Eye gaze losses: {eye_losses}, Multi-face events: {multi_faces}, Off-screen seconds: {no_face_seconds}.\n"
-                    f"Provide structured JSON output with: fraud_score (0-100), risk_level (low/medium/high), "
-                    f"fraud_detected (bool), summary (str)."
-                )
-                body = json.dumps({
-                    "anthropic_version": "bedrock-2023-05-31",
-                    "max_tokens": 500,
-                    "messages": [{"role": "user", "content": prompt}]
-                })
-                resp = self._client.invoke_model(body=body, modelId=self.model_id)
-                res_body = json.loads(resp.get("body").read())
-                output_text = res_body.get("content", [{}])[0].get("text", "")
-                return json.loads(output_text)
-            except Exception as err:
-                logger.error(f"Bedrock video analysis fallback: {err}")
-
-        return {
-            "fraud_score": fraud_score,
-            "risk_level": fraud_risk,
-            "fraud_detected": fraud_score >= 60,
-            "summary": f"Analyzed 5-minute initial video stream. {eye_losses} gaze diversions and {multi_faces} multi-person detections observed.",
         }
 
 

@@ -29,7 +29,7 @@ export default function AppearancePage() {
                 onClick={() => setTheme(o.key)}
                 className={cn(
                   "relative flex items-center gap-3 rounded-xl border p-4 text-left",
-                  active ? "border-[var(--admin-accent)] a-accent-soft" : "a-border a-hover",
+                  active ? "border-indigo-600 a-accent-soft" : "a-border a-hover",
                 )}
               >
                 <span className="flex h-10 w-10 items-center justify-center rounded-lg a-surface-2">

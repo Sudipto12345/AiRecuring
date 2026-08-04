@@ -3,10 +3,9 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-HOME_VENV="$HOME/airecruit-local-venv"
-HOME_FRONTEND="$HOME/airecruit-local-run/frontend"
-LOG_DIR="$HOME/.airecruit/logs"
-PID_DIR="$HOME/.airecruit/pids"
+HOME_VENV="$ROOT/backend/venv"
+LOG_DIR="$ROOT/.logs"
+PID_DIR="$ROOT/.pids"
 
 mkdir -p "$LOG_DIR" "$PID_DIR"
 
@@ -66,44 +65,30 @@ pip install -q -r "$ROOT/backend/requirements.txt"
 stop_port 8000
 info "Starting backend on :8000..."
 cd "$ROOT/backend"
-nohup uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 \
-  >"$LOG_DIR/backend.log" 2>&1 &
+nohup env PYTHONUNBUFFERED=1 uvicorn app.main:app --reload --reload-dir . --reload-delay 1 --host 0.0.0.0 --port 8000 \
+  >"$LOG_DIR/backend.log" 2>&1 & disown
 echo $! >"$PID_DIR/backend.pid"
 
 info "Setting up frontend..."
-mkdir -p "$(dirname "$HOME_FRONTEND")"
-if [[ ! -f "$HOME_FRONTEND/package.json" ]]; then
-  rsync -a --delete --exclude node_modules --exclude .next \
-    "$ROOT/frontend/" "$HOME_FRONTEND/"
-fi
-if [[ "$ROOT/frontend/package.json" -nt "$HOME_FRONTEND/package.json" ]] || \
-   [[ ! -d "$HOME_FRONTEND/node_modules" ]]; then
-  rsync -a --exclude node_modules --exclude .next "$ROOT/frontend/" "$HOME_FRONTEND/"
-  cd "$HOME_FRONTEND"
+cd "$ROOT/frontend"
+if [[ ! -d "node_modules" ]]; then
   npm install --silent
-else
-  cd "$HOME_FRONTEND"
 fi
 
-if [[ ! -f "$HOME_FRONTEND/.env.local" ]]; then
-  if [[ -f "$ROOT/frontend/.env.local" ]]; then
-    cp "$ROOT/frontend/.env.local" "$HOME_FRONTEND/.env.local"
-  else
-    echo "NEXT_PUBLIC_API_URL=http://localhost:8000/api" >"$HOME_FRONTEND/.env.local"
-  fi
+if [[ ! -f ".env.local" ]]; then
+  echo "NEXT_PUBLIC_API_URL=http://localhost:8000/api" >".env.local"
   ok "Created frontend .env.local"
 fi
 
 stop_port 3000
 info "Starting frontend on :3000..."
-nohup npx next dev -p 3000 --webpack >"$LOG_DIR/frontend.log" 2>&1 &
+nohup npx next dev --webpack -H 0.0.0.0 -p 3000 >"$LOG_DIR/frontend.log" 2>&1 & disown
 echo $! >"$PID_DIR/frontend.pid"
 
 wait_for_url "Backend"  "http://localhost:8000/api/health"
-wait_for_url "Frontend" "http://localhost:3000/"
+wait_for_url "Frontend" "http://localhost:3000/" 60
 
-if [[ "${GITHUB_WATCH:-1}" != "0" ]]; then
-  if [[ -n "${GITHUB_REPO:-}" ]] || (cd "$ROOT" && git remote get-url origin >/dev/null 2>&1); then
+if [[ "${GITHUB_WATCH:-0}" == "1" ]]; then
     info "Starting real-time GitHub push watcher..."
     chmod +x "$ROOT/github-push.sh" "$ROOT/github-watch-push.sh"
     nohup "$ROOT/github-watch-push.sh" >>"$LOG_DIR/github-watch.log" 2>&1 &
@@ -111,7 +96,6 @@ if [[ "${GITHUB_WATCH:-1}" != "0" ]]; then
   else
     echo "  GitHub watch skipped — run: export GITHUB_REPO=git@github.com:Sudipto12345/AiRecuring.git"
   fi
-fi
 
 echo ""
 echo "AIRecruit is running locally"

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 
-import { EngineStatus } from "@/components/layout/EngineStatus";
+
 import { Logo } from "@/components/layout/Logo";
 import { Avatar } from "@/components/ui/Avatar";
 import { useAuth } from "@/lib/auth";
@@ -128,7 +128,6 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* ── Bottom section ── */}
       <div className="space-y-2.5 px-3 pb-4 pt-2">
-        <EngineStatus />
 
         {/* Keyboard shortcut hint */}
         <div className="flex items-center justify-center gap-1.5 py-0.5">

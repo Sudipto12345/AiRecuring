@@ -9,6 +9,7 @@ class QuestionCreate(BaseModel):
     correct_index: int = 0
     category: str | None = None
     difficulty: str = "medium"
+    time_limit_sec: int = Field(default=60, ge=5, le=3600)
 
 
 class QuestionOut(BaseModel):
@@ -18,6 +19,7 @@ class QuestionOut(BaseModel):
     correct_index: int
     category: str | None
     difficulty: str
+    time_limit_sec: int
     created_at: datetime
 
 
@@ -86,6 +88,7 @@ class PublicQuestion(BaseModel):
     id: str
     text: str
     options: list[str]
+    time_limit_sec: int
 
 
 class PublicExam(BaseModel):

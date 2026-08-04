@@ -14,6 +14,7 @@ import {
   Users,
 } from "lucide-react";
 
+import Image from "next/image";
 import { CandidateDetail, CandidateDrawer } from "@/components/candidates/CandidateDrawer";
 import { UploadDialog } from "@/components/candidates/UploadDialog";
 import { PipelineChevron } from "@/components/dashboard/PipelineChevron";
@@ -42,6 +43,8 @@ export default function CandidatesPage() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [page, setPage] = useState(1);
 
+  const [autoRefresh, setAutoRefresh] = useState(true);
+
   const load = useCallback(async () => {
     const [c, j, s] = await Promise.all([
       api<Candidate[]>("/candidates?sort=score"),
@@ -56,7 +59,34 @@ export default function CandidatesPage() {
 
   useEffect(() => {
     load();
-  }, [load]);
+    if (!autoRefresh) return;
+    const timer = setInterval(() => {
+      load();
+    }, 15000);
+    return () => clearInterval(timer);
+  }, [load, autoRefresh]);
+
+  function exportCSV() {
+    const headers = ["Name", "Email", "Phone", "Job Title", "Stage", "Overall Score", "Experience (Yrs)", "Education"];
+    const rows = filtered.map((c) => [
+      `"${c.name}"`,
+      `"${c.email || ""}"`,
+      `"${c.phone || ""}"`,
+      `"${c.job_title || ""}"`,
+      `"${c.stage}"`,
+      c.overall_score,
+      c.experience_years,
+      `"${c.education || ""}"`,
+    ]);
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `candidates_export_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 
   const filtered = useMemo(() => {
     return candidates.filter((c) => {
@@ -121,7 +151,7 @@ export default function CandidatesPage() {
       value: String(stats?.total ?? 0),
       delta: (stats?.total ?? 0) > 0 ? 18.7 : undefined,
       icon: Users,
-      accent: "#6366f1",
+      accent: "#3a916a",
       spark: [8, 10, 9, 14, 13, 18, 20],
     },
     {
@@ -129,7 +159,7 @@ export default function CandidatesPage() {
       value: String(stats?.shortlisted ?? 0),
       delta: (stats?.shortlisted ?? 0) > 0 ? 12.4 : undefined,
       icon: Star,
-      accent: "#a855f7",
+      accent: "#4a7c64",
       spark: [3, 4, 5, 6, 6, 8, 9],
     },
     {
@@ -137,7 +167,7 @@ export default function CandidatesPage() {
       value: String(stats?.interview ?? 0),
       delta: (stats?.interview ?? 0) > 0 ? 15.3 : undefined,
       icon: CalendarCheck2,
-      accent: "#22c55e",
+      accent: "#2a7553",
       spark: [1, 2, 2, 3, 3, 4, 5],
     },
     {
@@ -145,7 +175,7 @@ export default function CandidatesPage() {
       value: String(Math.max(0, Math.round((stats?.shortlisted ?? 0) * 0.13))),
       delta: 8.2,
       icon: CheckCircle2,
-      accent: "#f59e0b",
+      accent: "#183e2e",
       spark: [0, 1, 1, 2, 2, 3, 4],
     },
     {
@@ -153,7 +183,7 @@ export default function CandidatesPage() {
       value: String(stats?.hired ?? 0),
       delta: (stats?.hired ?? 0) > 0 ? 9.1 : undefined,
       icon: CheckCircle2,
-      accent: "#0ea5e9",
+      accent: "#52b788",
       spark: [0, 1, 1, 1, 2, 2, 3],
     },
   ];
@@ -168,14 +198,30 @@ export default function CandidatesPage() {
   return (
     <div className="space-y-5 p-4 lg:p-6">
       <PageHeader
-        title="Candidates"
-        subtitle="Manage and track all candidates in your pipeline."
+        title="Candidate Pool"
+        subtitle="Manage, rank, and track top talent with peaceful AI precision."
         actions={
           <Button onClick={() => setUploadOpen(true)}>
             <Plus className="h-4 w-4" /> Add Candidate <ChevronDown className="h-4 w-4 opacity-70" />
           </Button>
         }
       />
+
+      {/* Hero Banner Artwork */}
+      <div className="relative w-full h-44 rounded-2xl overflow-hidden shadow-sm border border-emerald-500/20 group">
+        <Image
+          src="/images/candidates/hero.png"
+          alt="Candidates Pool Banner"
+          fill
+          className="object-cover transition-transform duration-700 group-hover:scale-102"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/70 via-emerald-900/30 to-transparent p-6 flex flex-col justify-center text-white">
+          <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-300 w-max border border-emerald-500/30">
+            🌿 Qualified Talent Network
+          </span>
+          <h2 className="text-xl font-bold mt-1 text-white">Curated Candidates & Skill Matching</h2>
+        </div>
+      </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
         {statCards.map((s) => (
@@ -217,8 +263,19 @@ export default function CandidatesPage() {
                   </option>
                 ))}
               </Select>
-              <button className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-line bg-white px-3 text-sm text-ink-600 hover:bg-slate-50">
-                <SlidersHorizontal className="h-4 w-4" /> More Filters
+              <button
+                onClick={exportCSV}
+                className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50/80 px-3 text-sm font-medium text-emerald-800 hover:bg-emerald-100"
+              >
+                📥 Export CSV
+              </button>
+              <button
+                onClick={() => setAutoRefresh(!autoRefresh)}
+                className={`inline-flex h-10 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium ${
+                  autoRefresh ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-line bg-white text-ink-500"
+                }`}
+              >
+                🔄 {autoRefresh ? "Auto-Refresh On (15s)" : "Auto-Refresh Off"}
               </button>
             </div>
           </Card>
@@ -260,7 +317,7 @@ export default function CandidatesPage() {
                       >
                         <td className="px-5 py-3">
                           <div className="flex items-center gap-3">
-                            <Avatar name={c.name} size="sm" />
+                            <Avatar name={c.name} src={c.photo_url ? `http://localhost:8000${c.photo_url}` : undefined} size="sm" />
                             <div className="min-w-0">
                               <p className="truncate font-medium text-ink-900">{c.name}</p>
                               <p className="truncate text-xs text-ink-400">{c.email}</p>

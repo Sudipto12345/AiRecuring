@@ -37,7 +37,7 @@ async def register(payload: RegisterRequest):
     company = Company(name=payload.company_name, slug=await _unique_slug(payload.company_name), industry=payload.industry)
     await company.insert()
 
-    sub = Subscription.from_plan(str(company.id), DEFAULT_PLAN)
+    sub = Subscription.from_plan(str(company.id), payload.plan or DEFAULT_PLAN)
     await sub.insert()
 
     admin = User(
@@ -62,6 +62,28 @@ async def login(payload: LoginRequest):
     user = await User.find_one(User.email == payload.email)
     if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid email or password")
+
+    # Super admins are never blocked by company verification
+    if user.role not in ("super_admin", "support"):
+        company = await Company.get(user.company_id) if user.company_id else None
+        if company:
+            vs = company.verification_status
+            if vs == "pending":
+                raise HTTPException(
+                    status.HTTP_403_FORBIDDEN,
+                    "PENDING_VERIFICATION: Your company registration is awaiting admin approval. You will be notified by email once approved.",
+                )
+            elif vs == "rejected":
+                raise HTTPException(
+                    status.HTTP_403_FORBIDDEN,
+                    f"REJECTED: Your company registration was rejected. {company.verification_notes or 'Please contact support.'}",
+                )
+            elif vs == "on_hold":
+                raise HTTPException(
+                    status.HTTP_403_FORBIDDEN,
+                    "ON_HOLD: Your account is on hold. Please contact support.",
+                )
+
     token = create_access_token(str(user.id), {"role": user.role, "cid": user.company_id})
     return TokenResponse(access_token=token)
 

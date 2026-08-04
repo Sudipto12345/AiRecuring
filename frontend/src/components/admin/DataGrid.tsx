@@ -40,54 +40,59 @@ export function DataGrid<T>({
   rows,
   rowKey,
   search,
-  searchPlaceholder = "Search…",
+  searchPlaceholder = "Search records…",
   selectable,
   bulkActions,
   onRowClick,
   toolbar,
   storageKey,
   loading,
-  empty = "No records found.",
+  empty = "No records matching current criteria.",
 }: DataGridProps<T>) {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortState | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
+  // Restore sort state safely
   useEffect(() => {
     if (!storageKey) return;
-    const raw = window.localStorage.getItem(`grid:${storageKey}`);
-    if (raw) {
-      try {
-        setSort(JSON.parse(raw).sort ?? null);
-      } catch {
-        /* ignore */
-      }
+    try {
+      const raw = window.localStorage.getItem(`grid:${storageKey}`);
+      if (raw) setSort(JSON.parse(raw).sort ?? null);
+    } catch {
+      // Ignore storage errors
     }
   }, [storageKey]);
 
   useEffect(() => {
-    if (storageKey) window.localStorage.setItem(`grid:${storageKey}`, JSON.stringify({ sort }));
+    if (storageKey) {
+      try {
+        window.localStorage.setItem(`grid:${storageKey}`, JSON.stringify({ sort }));
+      } catch {
+        // Ignore storage write errors
+      }
+    }
   }, [sort, storageKey]);
 
   const filtered = useMemo(() => {
-    let out = rows;
+    let dataset = rows;
     if (query && search) {
-      const q = query.toLowerCase();
-      out = out.filter((r) => search(r).toLowerCase().includes(q));
+      const q = query.toLowerCase().trim();
+      dataset = dataset.filter((r) => search(r).toLowerCase().includes(q));
     }
     if (sort) {
-      const col = columns.find((c) => c.key === sort.key);
-      if (col?.sortValue) {
-        out = [...out].sort((a, b) => {
-          const av = col.sortValue!(a);
-          const bv = col.sortValue!(b);
-          if (av < bv) return sort.dir === "asc" ? -1 : 1;
-          if (av > bv) return sort.dir === "asc" ? 1 : -1;
+      const targetCol = columns.find((c) => c.key === sort.key);
+      if (targetCol?.sortValue) {
+        dataset = [...dataset].sort((a, b) => {
+          const valA = targetCol.sortValue!(a);
+          const valB = targetCol.sortValue!(b);
+          if (valA < valB) return sort.dir === "asc" ? -1 : 1;
+          if (valA > valB) return sort.dir === "asc" ? 1 : -1;
           return 0;
         });
       }
     }
-    return out;
+    return dataset;
   }, [rows, query, search, sort, columns]);
 
   const toggleSort = (key: string) => {
@@ -106,6 +111,7 @@ export function DataGrid<T>({
       setSelected(new Set(filtered.map(rowKey)));
     }
   };
+
   const toggleRow = (id: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
@@ -114,43 +120,52 @@ export function DataGrid<T>({
       return next;
     });
   };
+
   const clearSelection = () => setSelected(new Set());
   const selectedRows = filtered.filter((r) => selected.has(rowKey(r)));
 
   return (
-    <div className="a-card overflow-hidden">
-      <div className="flex flex-wrap items-center gap-2 border-b a-border p-3">
+    <div className="a-card overflow-hidden rounded-2xl border a-border shadow-sm transition-all">
+      {/* Top Filter & Action Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b a-border bg-slate-50/50 dark:bg-white/[0.01] p-3.5 backdrop-blur-md">
         {search && (
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 a-faint" />
+          <div className="relative flex-1 min-w-[240px] max-w-md">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 a-faint" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={searchPlaceholder}
-              className="a-input h-9 w-full pl-9 pr-3 text-sm"
+              className="a-input h-9 w-full pl-9 pr-3 text-xs focus:ring-2 focus:ring-indigo-500/20 transition-all"
             />
           </div>
         )}
         <div className="ml-auto flex items-center gap-2">{toolbar}</div>
       </div>
 
+      {/* Selection Banner */}
       {selectable && selectedRows.length > 0 && (
-        <div className="flex items-center gap-3 border-b a-border bg-[var(--admin-accent-soft)] px-4 py-2 text-sm">
-          <span className="font-medium a-accent">{selectedRows.length} selected</span>
+        <div className="flex items-center gap-3 border-b border-indigo-200 dark:border-indigo-500/30 bg-indigo-50 dark:bg-indigo-500/15 px-4 py-2.5 text-xs">
+          <span className="font-semibold text-indigo-700 dark:text-indigo-300">{selectedRows.length} selected</span>
           <div className="flex items-center gap-2">{bulkActions?.(selectedRows, clearSelection)}</div>
-          <button onClick={clearSelection} className="ml-auto text-xs a-muted hover:underline">
-            Clear
+          <button onClick={clearSelection} className="ml-auto text-xs font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors">
+            Clear selection
           </button>
         </div>
       )}
 
+      {/* Table Display */}
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-xs">
           <thead>
-            <tr className="border-b a-border text-left text-xs uppercase tracking-wide a-faint">
+            <tr className="border-b a-border bg-slate-100/80 dark:bg-white/[0.03] text-left text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
               {selectable && (
-                <th className="w-10 px-4 py-2.5">
-                  <input type="checkbox" checked={allSelected} onChange={toggleAll} className="accent-[var(--admin-accent)]" />
+                <th className="w-10 px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleAll}
+                    className="h-3.5 w-3.5 rounded border-slate-300 dark:border-white/20 text-indigo-600 focus:ring-indigo-500"
+                  />
                 </th>
               )}
               {columns.map((c) => (
@@ -158,7 +173,7 @@ export function DataGrid<T>({
                   key={c.key}
                   style={{ width: c.width }}
                   className={cn(
-                    "px-4 py-2.5 font-medium",
+                    "px-4 py-3 font-semibold text-slate-700 dark:text-slate-200",
                     c.align === "right" && "text-right",
                     c.align === "center" && "text-center",
                   )}
@@ -167,19 +182,19 @@ export function DataGrid<T>({
                     <button
                       onClick={() => toggleSort(c.key)}
                       className={cn(
-                        "inline-flex items-center gap-1 hover:a-text",
+                        "inline-flex items-center gap-1.5 transition-colors hover:text-indigo-600 dark:hover:text-indigo-400",
                         c.align === "right" && "flex-row-reverse",
                       )}
                     >
                       {c.header}
                       {sort?.key === c.key ? (
                         sort.dir === "asc" ? (
-                          <ArrowUp className="h-3 w-3" />
+                          <ArrowUp className="h-3 w-3 text-indigo-600 dark:text-indigo-400" />
                         ) : (
-                          <ArrowDown className="h-3 w-3" />
+                          <ArrowDown className="h-3 w-3 text-indigo-600 dark:text-indigo-400" />
                         )
                       ) : (
-                        <ChevronsUpDown className="h-3 w-3 opacity-40" />
+                        <ChevronsUpDown className="h-3 w-3 opacity-40 hover:opacity-100" />
                       )}
                     </button>
                   ) : (
@@ -189,39 +204,43 @@ export function DataGrid<T>({
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y a-divide">
             {loading ? (
               <tr>
-                <td colSpan={columns.length + (selectable ? 1 : 0)} className="px-4 py-12 text-center a-faint">
-                  Loading…
+                <td colSpan={columns.length + (selectable ? 1 : 0)} className="px-4 py-12 text-center text-xs font-medium a-faint">
+                  <div className="flex justify-center items-center gap-2">
+                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+                    Loading dataset…
+                  </div>
                 </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={columns.length + (selectable ? 1 : 0)} className="px-4 py-12 text-center a-faint">
+                <td colSpan={columns.length + (selectable ? 1 : 0)} className="px-4 py-12 text-center text-xs font-medium a-faint">
                   {empty}
                 </td>
               </tr>
             ) : (
               filtered.map((row) => {
                 const id = rowKey(row);
+                const isSelected = selected.has(id);
                 return (
                   <tr
                     key={id}
                     onClick={() => onRowClick?.(row)}
                     className={cn(
-                      "border-b a-border/70 last:border-0",
-                      onRowClick && "a-hover cursor-pointer",
-                      selected.has(id) && "bg-[var(--admin-accent-soft)]",
+                      "group transition-colors duration-150",
+                      onRowClick && "cursor-pointer hover:bg-indigo-50/50 dark:hover:bg-white/[0.04]",
+                      isSelected ? "bg-indigo-50/80 dark:bg-indigo-500/15" : "even:bg-slate-50/50 dark:even:bg-white/[0.01]"
                     )}
                   >
                     {selectable && (
-                      <td className="px-4 py-2.5" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
-                          checked={selected.has(id)}
+                          checked={isSelected}
                           onChange={() => toggleRow(id)}
-                          className="accent-[var(--admin-accent)]"
+                          className="h-3.5 w-3.5 rounded border-slate-300 dark:border-white/20 text-indigo-600 focus:ring-indigo-500"
                         />
                       </td>
                     )}
@@ -230,7 +249,7 @@ export function DataGrid<T>({
                         key={c.key}
                         style={{ width: c.width }}
                         className={cn(
-                          "px-4 py-2.5 a-text",
+                          "px-4 py-3 a-text font-medium",
                           c.align === "right" && "text-right",
                           c.align === "center" && "text-center",
                         )}
@@ -246,11 +265,12 @@ export function DataGrid<T>({
         </table>
       </div>
 
-      <div className="flex items-center justify-between border-t a-border px-4 py-2 text-xs a-faint">
-        <span>
-          {filtered.length} of {rows.length} rows
+      {/* Pagination / Table Footer */}
+      <div className="flex items-center justify-between border-t a-border bg-slate-50/60 dark:bg-white/[0.01] px-4 py-2.5 text-[11px] a-faint">
+        <span className="font-medium">
+          Showing {filtered.length} of {rows.length} total entries
         </span>
-        {query && <span>Filtered by “{query}”</span>}
+        {query && <span className="rounded-md a-accent-soft px-2 py-0.5 font-medium">Filter: "{query}"</span>}
       </div>
     </div>
   );

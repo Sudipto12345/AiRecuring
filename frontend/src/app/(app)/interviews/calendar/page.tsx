@@ -74,7 +74,7 @@ export default function InterviewCalendarPage() {
             return (
               <div
                 key={idx}
-                className={cn("min-h-24 rounded-lg border a-border p-1.5", isToday && "ring-1 ring-[var(--admin-accent)]")}
+                className={cn("min-h-24 rounded-lg border a-border p-1.5", isToday && "ring-1 ring-indigo-500")}
               >
                 <p className={cn("mb-1 text-xs font-semibold", isToday ? "a-accent" : "a-muted")}>{day}</p>
                 <div className="space-y-1">

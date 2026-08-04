@@ -99,7 +99,7 @@ export default function PlansPage() {
                   key={m.key}
                   className={cn(
                     "rounded-md px-2 py-0.5 text-[11px] font-medium",
-                    p.modules.includes(m.key) ? "bg-[var(--admin-accent-soft)] a-accent" : "a-surface-2 a-faint line-through",
+                    p.modules.includes(m.key) ? "a-accent-soft a-accent" : "a-surface-2 a-faint line-through",
                   )}
                 >
                   {m.label}
@@ -240,7 +240,7 @@ function PlanBuilder({ plan, onClose, onSaved }: { plan: AdminPlan | null; onClo
                 onClick={() => toggleModule(m.key)}
                 className={cn(
                   "flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm",
-                  modules.includes(m.key) ? "border-[var(--admin-accent)] bg-[var(--admin-accent-soft)] a-accent" : "a-border a-muted",
+                  modules.includes(m.key) ? "border-indigo-600 a-accent-soft a-accent" : "a-border a-muted",
                 )}
               >
                 {modules.includes(m.key) && <Check className="h-3.5 w-3.5" />}
@@ -277,7 +277,7 @@ function PlanBuilder({ plan, onClose, onSaved }: { plan: AdminPlan | null; onClo
                 onClick={() => setLimits((l) => ({ ...l, [k]: !l[k] }))}
                 className={cn(
                   "flex items-center justify-between rounded-lg border px-3 py-2 text-sm",
-                  limits[k] ? "border-[var(--admin-accent)] bg-[var(--admin-accent-soft)] a-accent" : "a-border a-muted",
+                  limits[k] ? "border-indigo-600 a-accent-soft a-accent" : "a-border a-muted",
                 )}
               >
                 {LIMIT_LABEL[k]}
@@ -288,7 +288,7 @@ function PlanBuilder({ plan, onClose, onSaved }: { plan: AdminPlan | null; onClo
         </div>
 
         <label className="mt-5 flex items-center gap-2 text-sm a-muted">
-          <input type="checkbox" checked={isCustom} onChange={(e) => setIsCustom(e.target.checked)} className="accent-[var(--admin-accent)]" />
+          <input type="checkbox" checked={isCustom} onChange={(e) => setIsCustom(e.target.checked)} className="accent-indigo-600" />
           Custom (negotiated) plan
         </label>
 

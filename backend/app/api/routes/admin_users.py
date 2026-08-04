@@ -144,6 +144,12 @@ async def delete_user(user_id: str, request: Request, admin_user: User = Depends
     if str(admin_user.id) == str(target.id):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Cannot delete yourself")
     
+    # Prevent deleting the last remaining super_admin
+    if target.role == "super_admin":
+        count = await User.find(User.role == "super_admin").count()
+        if count <= 1:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Cannot delete the last remaining platform Super Admin")
+    
     await target.delete()
     await audit.record(admin_user, "user.delete", target_type="user", target_id=user_id,
                        company_id=target.company_id, ip=_client_ip(request), meta={"email": target.email, "role": target.role})

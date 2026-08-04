@@ -21,6 +21,7 @@ interface RegisterPayload {
   admin_name: string;
   email: string;
   password: string;
+  plan?: string;
 }
 
 const AuthContext = createContext<AuthState | null>(null);

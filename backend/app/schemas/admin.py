@@ -107,6 +107,14 @@ class CompanyDetail(BaseModel):
     slug: str
     industry: str | None = None
     status: str
+    registration_number: str | None = None
+    incorporation_country: str | None = None
+    business_address: str | None = None
+    legal_entity_name: str | None = None
+    proof_document_url: str | None = None
+    verification_status: str = "verified"
+    verification_notes: str | None = None
+    verified_at: datetime | None = None
     plan: str
     modules: list[str]
     limits: dict

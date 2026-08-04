@@ -14,41 +14,47 @@ export function AdminTopbar({ onMenu }: { onMenu?: () => void }) {
   const router = useRouter();
 
   return (
-    <header className="a-surface sticky top-0 z-30 flex h-16 items-center gap-3 border-b a-border px-4 lg:px-6">
-      <button onClick={onMenu} className="a-hover rounded-lg p-2 a-muted lg:hidden">
-        <Menu className="h-5 w-5" />
+    <header className="sticky top-0 z-30 flex h-13 items-center gap-3 border-b a-border a-surface px-4 backdrop-blur-xl lg:px-6">
+      <button
+        onClick={onMenu}
+        className="a-hover flex h-8 w-8 items-center justify-center rounded-lg border a-border a-muted lg:hidden"
+        aria-label="Open mobile menu"
+      >
+        <Menu className="h-4 w-4" />
       </button>
 
-      <span className="hidden items-center gap-1.5 rounded-full bg-[var(--admin-accent-soft)] px-2.5 py-1 text-xs font-medium a-accent sm:inline-flex">
-        <ShieldCheck className="h-3.5 w-3.5" /> Platform Admin
+      <span className="hidden items-center gap-1.5 rounded-md border border-indigo-500/20 bg-indigo-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 sm:inline-flex">
+        <ShieldCheck className="h-3.5 w-3.5" /> Platform Owner
       </span>
 
       <button
         onClick={open}
-        className="a-hover ml-2 flex h-9 flex-1 max-w-md items-center gap-2 rounded-lg border a-border px-3 text-sm a-faint"
+        className="group ml-1 flex h-8 flex-1 max-w-xs sm:max-w-sm items-center gap-2 rounded-lg border a-border a-surface-2 px-2.5 text-[12px] a-faint hover:a-border-strong hover:a-text transition-all"
       >
-        <Search className="h-4 w-4" />
-        <span>Search anything…</span>
-        <kbd className="ml-auto rounded border a-border px-1.5 py-0.5 text-[10px]">⌘K</kbd>
+        <Search className="h-3.5 w-3.5 a-faint group-hover:text-indigo-500 transition-colors" />
+        <span className="truncate">Search workspaces, billing…</span>
+        <kbd className="a-elevated a-border a-faint ml-auto rounded border px-1.5 py-0.5 text-[9px] font-bold">⌘K</kbd>
       </button>
 
       <div className="ml-auto flex items-center gap-2">
         <ThemeToggle />
-        <div className="hidden items-center gap-2.5 rounded-xl border a-border px-2.5 py-1.5 sm:flex">
-          <Avatar name={session?.user.name ?? "Admin"} src={session?.user.avatar_url} size="sm" />
+
+        <div className="a-surface-2 a-border hidden items-center gap-2 rounded-lg border px-2.5 py-1 sm:flex">
+          <div className="relative">
+            <Avatar name={session?.user.name ?? "Super Admin"} src={session?.user.avatar_url} size="sm" />
+            <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full border-[1.5px] border-white bg-emerald-500 dark:border-zinc-900" />
+          </div>
           <div className="min-w-0 leading-tight">
-            <p className="truncate text-[13px] font-semibold a-text">{session?.user.name}</p>
-            <p className="truncate text-[11px] a-faint">{session?.user.email}</p>
+            <p className="truncate text-[12px] font-medium a-text">{session?.user.name ?? "Platform Owner"}</p>
+            <p className="truncate text-[10px] a-faint">{session?.user.email ?? "owner@airecruit.io"}</p>
           </div>
         </div>
+
         <button
-          onClick={() => {
-            logout();
-            router.push("/login");
-          }}
-          className="a-hover flex h-9 items-center gap-1.5 rounded-lg border a-border px-3 text-sm a-muted"
+          onClick={() => { logout(); router.push("/login"); }}
+          className="flex h-8 items-center gap-1.5 rounded-lg border border-rose-500/20 bg-rose-500/10 px-2.5 text-[11px] font-medium text-rose-600 hover:bg-rose-500/20 dark:text-rose-400 transition-all"
         >
-          <LogOut className="h-4 w-4" />
+          <LogOut className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Sign out</span>
         </button>
       </div>

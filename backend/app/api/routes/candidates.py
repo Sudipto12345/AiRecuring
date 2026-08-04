@@ -20,7 +20,7 @@ from app.services.credits import ensure_balance
 from app.services.embeddings import index_candidate, search_candidates
 from app.services.face_recognition import embed_image
 from app.services.llm import llm_available, llm_parse, llm_score
-from app.services.resume_parser import extract_text, parse_resume
+from app.services.resume_parser import extract_text, looks_like_cv, parse_resume
 from app.services.serializers import candidate_out
 from app.services.storage import save_upload
 
@@ -95,9 +95,14 @@ async def upload_cvs(
         data = await upload.read()
         if not data:
             continue
-        path = save_upload(user.company_id, f"resumes/{job_id}", upload.filename or "resume", data)
+
+        filename = upload.filename or "resume"
+        path = save_upload(user.company_id, f"resumes/{job_id}", filename, data)
         text = extract_text(path, upload.content_type)
-        parsed = parse_resume(text, upload.filename or "resume")
+        if not text.strip() or not looks_like_cv(text, filename):
+            continue
+
+        parsed = parse_resume(text, filename)
 
         # When an LLM key is configured, refine the extracted fields with the model;
         # otherwise the heuristic extraction is used as-is. No values are fabricated.
@@ -106,6 +111,9 @@ async def upload_cvs(
             for key in ("name", "email", "phone", "location", "education", "experience_years", "skills", "soft_skills"):
                 if llm_fields.get(key):
                     parsed[key] = llm_fields[key]
+
+        if parsed.get("experience_years") is None:
+            parsed["experience_years"] = 0.0
 
         result = await llm_score(text, job, user.company_id) or score_candidate(parsed, job)
 
@@ -197,6 +205,23 @@ async def upload_reference_photo(
     return candidate_out(candidate)
 
 
+from pathlib import Path
+from starlette.responses import FileResponse
+
+@router.get("/{candidate_id}/resume")
+async def download_resume(candidate_id: str, user: User = Depends(company_user)):
+    c = await _owned(candidate_id, user)
+    if not c.resume_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No resume attached")
+    resume = await Resume.get(c.resume_id)
+    if not resume or not getattr(resume, "stored_path", None):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Resume file not found")
+    path = Path(resume.stored_path)
+    if not path.exists():
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "File does not exist on disk")
+    return FileResponse(path, filename=resume.filename, media_type=getattr(resume, "content_type", None) or "application/octet-stream")
+
+
 @router.patch("/{candidate_id}/stage", response_model=CandidateOut)
 async def update_stage(candidate_id: str, payload: StageUpdate, user: User = Depends(company_user)):
     if payload.stage not in STAGES + ["Interview Scheduled", "Shortlisted", "Assessment Sent"]:
@@ -206,3 +231,4 @@ async def update_stage(candidate_id: str, payload: StageUpdate, user: User = Dep
     c.last_activity = datetime.now(timezone.utc)
     await c.save()
     return candidate_out(c)
+

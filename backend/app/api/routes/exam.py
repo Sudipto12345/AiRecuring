@@ -26,7 +26,7 @@ async def load_exam(token: str):
     for qid in invite.question_ids:
         q = await Question.get(qid)
         if q:
-            questions.append(PublicQuestion(id=str(q.id), text=q.text, options=q.options))
+            questions.append(PublicQuestion(id=str(q.id), text=q.text, options=q.options, time_limit_sec=q.time_limit_sec))
     return PublicExam(
         token=token,
         candidate_name=candidate.name if candidate else "Candidate",

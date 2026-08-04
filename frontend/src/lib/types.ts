@@ -18,6 +18,14 @@ export interface SessionCompany {
   slug: string;
   industry?: string | null;
   status: string;
+  registration_number?: string | null;
+  incorporation_country?: string | null;
+  business_address?: string | null;
+  legal_entity_name?: string | null;
+  proof_document_url?: string | null;
+  verification_status?: string | null;
+  verification_notes?: string | null;
+  verified_at?: string | null;
 }
 
 export interface SessionSubscription {
@@ -178,6 +186,7 @@ export interface Question {
   correct_index: number;
   category: string | null;
   difficulty: string;
+  time_limit_sec: number;
   created_at: string;
 }
 
@@ -389,6 +398,14 @@ export interface CompanyDetail {
   slug: string;
   industry: string | null;
   status: string;
+  registration_number: string | null;
+  incorporation_country: string | null;
+  business_address: string | null;
+  legal_entity_name: string | null;
+  proof_document_url: string | null;
+  verification_status: string;
+  verification_notes: string | null;
+  verified_at: string | null;
   plan: string;
   modules: ModuleKey[];
   limits: Record<string, number | boolean>;

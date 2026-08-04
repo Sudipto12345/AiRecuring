@@ -77,6 +77,8 @@ def candidate_out(c: Candidate) -> CandidateOut:
         meeting_link=c.meeting_link,
         has_reference_photo=bool(c.reference_photo_path),
         photo_url=_media_url(c.reference_photo_path),
+        resume_id=c.resume_id,
+        resume_url=f"/api/candidates/{c.id}/resume" if c.resume_id else None,
         added_on=c.added_on,
         last_activity=c.last_activity,
     )

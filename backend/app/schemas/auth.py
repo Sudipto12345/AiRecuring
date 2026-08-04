@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -7,6 +9,7 @@ class RegisterRequest(BaseModel):
     admin_name: str = Field(min_length=2)
     email: EmailStr
     password: str = Field(min_length=6)
+    plan: str = "free"
 
 
 class LoginRequest(BaseModel):
@@ -35,6 +38,14 @@ class CompanyOut(BaseModel):
     slug: str
     industry: str | None = None
     status: str
+    registration_number: str | None = None
+    incorporation_country: str | None = None
+    business_address: str | None = None
+    legal_entity_name: str | None = None
+    proof_document_url: str | None = None
+    verification_status: str = "verified"
+    verification_notes: str | None = None
+    verified_at: datetime | None = None
 
 
 class SubscriptionOut(BaseModel):

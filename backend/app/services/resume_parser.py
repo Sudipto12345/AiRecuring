@@ -1,14 +1,40 @@
 import re
 from pathlib import Path
 
+try:
+    import spacy
+except ImportError:
+    spacy = None
+
 from app.services.skills import SKILL_ALIASES, SKILL_VOCAB
+
+# Attempt to load custom trained NLP CV model
+NLP_MODEL_PATH = Path(__file__).parent.parent.parent / "models" / "cv_nlp_model"
+cv_nlp = None
+if spacy and NLP_MODEL_PATH.exists():
+    try:
+        cv_nlp = spacy.load(NLP_MODEL_PATH)
+    except Exception as e:
+        print(f"Warning: Failed to load CV NLP model: {e}")
 
 EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}")
 # International-friendly phone: optional +, country/area code, separators, 7-14 digits overall.
 PHONE_RE = re.compile(r"(?<!\d)(\+?\d[\d\s().\-]{7,}\d)(?!\d)")
 YEARS_RE = re.compile(r"(\d{1,2}(?:\.\d+)?)\s*\+?\s*(?:years?|yrs?)\b", re.IGNORECASE)
+YEAR_SPAN_RE = re.compile(r"\b(19|20)\d{2}\s*(?:-|to|through|–)\s*(19|20)\d{2}\b")
+YEAR_RANGE_RE = re.compile(r"\b(19|20)\d{2}\s*[-–]\s*(19|20)\d{2}\b")
 LINKEDIN_RE = re.compile(r"(?:https?://)?(?:www\.)?linkedin\.com/in/[A-Za-z0-9_\-/%]+", re.IGNORECASE)
 GITHUB_RE = re.compile(r"(?:https?://)?(?:www\.)?github\.com/[A-Za-z0-9_\-]+", re.IGNORECASE)
+
+CV_HINTS = (
+    "experience", "education", "skills", "summary", "profile",
+    "work history", "employment", "projects", "education", "certifications",
+    "objective", "professional summary", "career objective", "technologies",
+)
+NON_CV_HINTS = (
+    "invoice", "quotation", "purchase order", "receipt", "billing statement",
+    "tax invoice", "statement", "payment", "bank transfer", "account number",
+)
 
 # lines that look like section headers, not people
 STOP_TITLES = {
@@ -96,6 +122,21 @@ def _clean_name(line: str) -> str:
     return line
 
 
+def looks_like_cv(text: str, filename: str) -> bool:
+    low = text.lower()
+    if any(term in low for term in NON_CV_HINTS):
+        return False
+
+    hint_hits = sum(1 for term in CV_HINTS if term in low)
+    has_email = bool(EMAIL_RE.search(text))
+    has_phone = bool(PHONE_RE.search(text))
+    has_name = guess_name(text, filename) != "Unknown Candidate"
+    has_experience = bool(YEARS_RE.search(text) or YEAR_RANGE_RE.search(text) or YEAR_SPAN_RE.search(text))
+    has_skills = bool(detect_skills(text))
+
+    return (hint_hits >= 2 or has_email or has_phone or has_experience) and (has_name or has_skills)
+
+
 def guess_name(text: str, filename: str) -> str:
     lines = [ln.strip() for ln in text.splitlines()]
 
@@ -162,7 +203,22 @@ def detect_skills(text: str) -> list[str]:
 def _detect_experience(text: str) -> float:
     matches = [float(m) for m in YEARS_RE.findall(text) if float(m) <= 45]
     if matches:
-        return max(matches)
+        return round(max(matches), 1)
+
+    for match in YEAR_RANGE_RE.finditer(text):
+        start = int(match.group(1))
+        end = int(match.group(2))
+        span = end - start
+        if 0 < span <= 45:
+            return float(span)
+
+    for match in YEAR_SPAN_RE.finditer(text):
+        start = int(match.group(1))
+        end = int(match.group(2))
+        span = end - start
+        if 0 < span <= 45:
+            return float(span)
+
     years = sorted(int(y) for y in re.findall(r"\b(?:19|20)\d{2}\b", text))
     if len(years) >= 2:
         span = years[-1] - years[0]
@@ -219,6 +275,29 @@ def parse_resume(text: str, filename: str) -> dict:
             break
 
     links = detect_links(text)
+    
+    skills = detect_skills(text)
+    education = _detect_education(text)
+    experience_years = _detect_experience(text)
+
+    # Use custom NLP model to augment extractions if available
+    if cv_nlp:
+        doc = cv_nlp(text)
+        for ent in doc.ents:
+            label = ent.label_
+            val = ent.text.strip()
+            if label == "SKILL" and val not in skills:
+                skills.append(val)
+            elif label == "EDUCATION" and not education:
+                education = val
+            elif label == "EXPERIENCE":
+                # Very basic extraction: looking for numbers near the experience string
+                nums = [int(s) for s in val.split() if s.isdigit()]
+                if nums:
+                    exp_val = max(nums)
+                    if exp_val > experience_years:
+                        experience_years = float(exp_val)
+
     return {
         "name": guess_name(text, filename),
         "email": email.group(0) if email else None,
@@ -226,8 +305,8 @@ def parse_resume(text: str, filename: str) -> dict:
         "location": detect_location(text),
         "linkedin": links["linkedin"],
         "github": links["github"],
-        "skills": detect_skills(text),
+        "skills": skills,
         "soft_skills": detect_soft_skills(text),
-        "experience_years": _detect_experience(text),
-        "education": _detect_education(text),
+        "experience_years": experience_years,
+        "education": education,
     }

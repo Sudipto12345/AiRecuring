@@ -94,7 +94,7 @@ services:
       SUPERADMIN_EMAIL: owner@airecruit.io
       SUPERADMIN_PASSWORD: owner12345
       SUPERADMIN_NAME: Platform Owner
-      FRONTEND_ORIGIN: http://localhost:3000
+      FRONTEND_ORIGIN: http://3.25.116.241:3000
       STORAGE_DIR: /app/storage
       DEV_MODE: "false"
     volumes:
@@ -128,7 +128,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: "3000"
-      NEXT_PUBLIC_API_URL: http://localhost:8000/api
+      NEXT_PUBLIC_API_URL: http://3.25.116.241:8000/api
     networks:
       - airecruit-network
     depends_on:

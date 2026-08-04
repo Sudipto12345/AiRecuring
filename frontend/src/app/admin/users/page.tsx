@@ -12,7 +12,7 @@ import type { AdminUserRow, Role } from "@/lib/types";
 
 const ROLE_TONE: Record<string, string> = {
   super_admin: "bg-amber-500/10 text-amber-500",
-  company_admin: "bg-[var(--admin-accent-soft)] a-accent",
+  company_admin: "a-accent-soft a-accent",
   hr: "bg-emerald-500/10 text-emerald-500",
   interviewer: "bg-sky-500/10 text-sky-500",
 };

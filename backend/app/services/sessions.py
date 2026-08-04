@@ -30,6 +30,14 @@ def company_out(company: Company) -> CompanyOut:
         slug=company.slug,
         industry=company.industry,
         status=company.status,
+        registration_number=company.registration_number,
+        incorporation_country=company.incorporation_country,
+        business_address=company.business_address,
+        legal_entity_name=company.legal_entity_name,
+        proof_document_url=company.proof_document_url,
+        verification_status=company.verification_status,
+        verification_notes=company.verification_notes,
+        verified_at=company.verified_at,
     )
 
 

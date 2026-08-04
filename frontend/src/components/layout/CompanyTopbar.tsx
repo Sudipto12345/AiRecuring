@@ -88,7 +88,7 @@ export function CompanyTopbar({ onMenu }: { onMenu: () => void }) {
           title="Notifications"
         >
           <Bell className="h-[18px] w-[18px]" />
-          <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-[var(--admin-surface)]" />
+          <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-slate-900" />
         </button>
 
         <button

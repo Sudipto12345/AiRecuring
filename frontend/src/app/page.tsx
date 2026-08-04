@@ -12,10 +12,17 @@ export default function Home() {
   useEffect(() => {
     // Wait for /auth/me to validate the token server-side before routing.
     if (loading) return;
-    if (!session) {
-      router.replace("/login");
+
+    const target = !session
+      ? "/login"
+      : session.user.role === "super_admin"
+        ? "/admin"
+        : "/dashboard";
+
+    if (typeof window !== "undefined") {
+      window.location.replace(target);
     } else {
-      router.replace(session.user.role === "super_admin" ? "/admin" : "/dashboard");
+      router.replace(target);
     }
   }, [loading, session, router]);
 

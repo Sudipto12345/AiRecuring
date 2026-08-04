@@ -28,21 +28,34 @@ export function ContextDrawerProvider({ children }: { children: React.ReactNode 
       {children}
       {content && (
         <div className="fixed inset-0 z-[60]">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" onClick={close} />
+          {/* Backdrop with smooth blur */}
           <div
-            className="a-surface a-shadow-pop animate-drawer absolute right-0 top-0 flex h-full flex-col border-l a-border"
-            style={{ width: content.width ?? 420 }}
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+            onClick={close}
+          />
+
+          {/* Drawer container */}
+          <div
+            className="animate-drawer absolute right-0 top-0 flex h-full flex-col border-l border-white/[0.08] bg-[#0d121f] text-slate-100 shadow-2xl shadow-black/80 backdrop-blur-2xl"
+            style={{ width: content.width ?? 440 }}
           >
-            <div className="flex items-start justify-between gap-3 border-b a-border px-5 py-4">
-              <div className="min-w-0">
-                <h2 className="truncate text-sm font-semibold a-text">{content.title}</h2>
-                {content.subtitle && <p className="truncate text-xs a-faint">{content.subtitle}</p>}
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
+              <div className="min-w-0 flex-1 pr-2">
+                <h2 className="truncate text-sm font-semibold text-white">{content.title}</h2>
+                {content.subtitle && <p className="mt-0.5 truncate text-[11px] text-slate-400">{content.subtitle}</p>}
               </div>
-              <button onClick={close} className="a-hover rounded-lg p-1 a-muted">
-                <X className="h-5 w-5" />
+              <button
+                onClick={close}
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-white/[0.06] hover:text-white transition-colors"
+                aria-label="Close drawer"
+              >
+                <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-5">{content.node}</div>
+
+            {/* Content Body */}
+            <div className="flex-1 overflow-y-auto p-5 no-scrollbar">{content.node}</div>
           </div>
         </div>
       )}

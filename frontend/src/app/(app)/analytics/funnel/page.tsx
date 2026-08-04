@@ -43,7 +43,7 @@ export default function HiringFunnelPage() {
                       {stage.count} · {stage.pct}%{i > 0 && ` · ${conversion}% step`}
                     </span>
                   </div>
-                  <div className="h-9 w-full overflow-hidden rounded-lg bg-[var(--admin-surface-2)]">
+                  <div className="h-9 w-full overflow-hidden rounded-lg a-surface-2">
                     <div
                       className="flex h-full items-center justify-end rounded-lg px-3 text-xs font-medium text-white transition-all"
                       style={{ width: `${Math.max(stage.pct, 6)}%`, backgroundColor: COLORS[i % COLORS.length] }}

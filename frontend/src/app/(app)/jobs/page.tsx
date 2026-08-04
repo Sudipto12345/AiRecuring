@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Briefcase, CheckCircle2, PauseCircle, Plus, Search, XCircle } from "lucide-react";
 
+import Image from "next/image";
 import { UploadDialog } from "@/components/candidates/UploadDialog";
 import { ExamDispatch } from "@/components/jobs/ExamDispatch";
 import { JobDetail } from "@/components/jobs/JobDetail";
@@ -64,23 +65,39 @@ export default function JobsPage() {
   }
 
   const statCards = [
-    { label: "Total Jobs", value: String(stats?.total ?? 0), icon: Briefcase, accent: "#6366f1", spark: [4, 5, 6, 6, 7, 8, 9] },
-    { label: "Active Jobs", value: String(stats?.active ?? 0), icon: CheckCircle2, accent: "#22c55e", spark: [3, 4, 4, 5, 5, 6, 7] },
-    { label: "On Hold", value: String(stats?.on_hold ?? 0), icon: PauseCircle, accent: "#f59e0b", spark: [1, 1, 2, 1, 2, 2, 2] },
-    { label: "Closed", value: String(stats?.closed ?? 0), icon: XCircle, accent: "#ef4444", spark: [0, 1, 1, 2, 2, 3, 3] },
+    { label: "Total Jobs", value: String(stats?.total ?? 0), icon: Briefcase, accent: "#2a7553", spark: [4, 5, 6, 6, 7, 8, 9] },
+    { label: "Active Jobs", value: String(stats?.active ?? 0), icon: CheckCircle2, accent: "#3a916a", spark: [3, 4, 4, 5, 5, 6, 7] },
+    { label: "On Hold", value: String(stats?.on_hold ?? 0), icon: PauseCircle, accent: "#597568", spark: [1, 1, 2, 1, 2, 2, 2] },
+    { label: "Closed", value: String(stats?.closed ?? 0), icon: XCircle, accent: "#88a598", spark: [0, 1, 1, 2, 2, 3, 3] },
   ];
 
   return (
     <div className="space-y-5 p-4 lg:p-6">
       <PageHeader
-        title="Jobs"
-        subtitle="Manage all job openings and track performance."
+        title="Job Openings"
+        subtitle="Manage all job openings, requirements, and candidate pipelines."
         actions={
           <Button onClick={() => setFormOpen(true)}>
             <Plus className="h-4 w-4" /> Create New Job
           </Button>
         }
       />
+
+      {/* Hero Banner Artwork */}
+      <div className="relative w-full h-44 rounded-2xl overflow-hidden shadow-sm border border-emerald-500/20 group">
+        <Image
+          src="/images/jobs/hero.png"
+          alt="Jobs Blooming Opportunities Banner"
+          fill
+          className="object-cover transition-transform duration-700 group-hover:scale-102"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/70 via-emerald-900/30 to-transparent p-6 flex flex-col justify-center text-white">
+          <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-300 w-max border border-emerald-500/30">
+            🌿 Opportunities Blooming
+          </span>
+          <h2 className="text-xl font-bold mt-1 text-white">Active Career Listings & Openings</h2>
+        </div>
+      </div>
 
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         {statCards.map((s) => (

@@ -1,9 +1,12 @@
 import json
-
+import logging
 import httpx
 
 from app.core.config import settings
 from app.models.job import Job
+from app.services.bedrock import bedrock_service
+
+logger = logging.getLogger("air.llm")
 
 SYSTEM = (
     "Recruitment analyst. Job + resume in, JSON out. Keys: skill, experience, education, culture, "
@@ -11,15 +14,14 @@ SYSTEM = (
     "JSON only, no chit-chat."
 )
 
-
-def llm_available() -> bool:
-    return bool(settings.openai_api_key)
-
-
 PARSE_SYSTEM = (
     "Pull fields from this CV/resume. JSON keys: name, email, phone, location, education, "
     "experience_years, skills[], soft_skills[]. Only what's actually in the text — don't guess. JSON only."
 )
+
+
+def llm_available() -> bool:
+    return bool(settings.openai_api_key) or bedrock_service.is_available()
 
 
 async def _charge(company_id: str | None, usage: dict, reason: str, meta: dict | None = None) -> None:
@@ -38,8 +40,14 @@ async def _charge(company_id: str | None, usage: dict, reason: str, meta: dict |
 
 
 async def llm_parse(resume_text: str, company_id: str | None = None) -> dict | None:
-    if not llm_available():
+    if settings.llm_provider == "bedrock" and bedrock_service.is_available():
+        res = await bedrock_service.parse_resume_with_bedrock(resume_text)
+        if res:
+            return res
+
+    if not settings.openai_api_key:
         return None
+
     try:
         async with httpx.AsyncClient(timeout=40) as client:
             res = await client.post(
@@ -59,16 +67,11 @@ async def llm_parse(resume_text: str, company_id: str | None = None) -> dict | N
             body = res.json()
             data = json.loads(body["choices"][0]["message"]["content"])
             await _charge(company_id, body.get("usage", {}), "CV parsing")
-    except Exception:
+            cleaned = {k: v for k, v in data.items() if v not in (None, "", [])}
+            return cleaned or None
+    except Exception as err:
+        logger.warning(f"OpenAI parse failed: {err}")
         return None
-
-    cleaned = {k: v for k, v in data.items() if v not in (None, "", [])}
-    if "experience_years" in cleaned:
-        try:
-            cleaned["experience_years"] = float(cleaned["experience_years"])
-        except (TypeError, ValueError):
-            cleaned.pop("experience_years", None)
-    return cleaned or None
 
 
 async def llm_chat(
@@ -80,39 +83,55 @@ async def llm_chat(
 ) -> tuple[str, int] | None:
     """Generic chat completion for the AI Copilot.
 
-    Returns ``(reply_text, total_tokens)`` or ``None`` when the LLM is
-    unavailable or the call fails (callers fall back to a heuristic reply).
+    Tries AWS Bedrock first, then OpenAI, returning (reply_text, total_tokens)
+    or None if unavailable/failing.
     """
-    if not llm_available():
-        return None
-    try:
-        async with httpx.AsyncClient(timeout=40) as client:
-            res = await client.post(
-                "https://api.openai.com/v1/chat/completions",
-                headers={"Authorization": f"Bearer {settings.openai_api_key}"},
-                json={
-                    "model": settings.llm_model,
-                    "messages": [
-                        {"role": "system", "content": system},
-                        {"role": "user", "content": user_msg[:8000]},
-                    ],
-                    "temperature": 0.4,
-                },
-            )
-            res.raise_for_status()
-            body = res.json()
-            reply = body["choices"][0]["message"]["content"]
-            usage = body.get("usage", {})
-            await _charge(company_id, usage, reason, meta)
-            total = int(usage.get("prompt_tokens", 0)) + int(usage.get("completion_tokens", 0))
-    except Exception:
-        return None
-    return reply, total
+    if bedrock_service.is_available():
+        try:
+            prompt = f"System instruction: {system}\n\nUser Question: {user_msg}"
+            reply = bedrock_service._invoke_text(prompt, max_tokens=1000)
+            if reply:
+                return reply, len(prompt.split())
+        except Exception as err:
+            logger.info(f"Bedrock chat invocation unavailable/failed, checking fallbacks: {err}")
+
+    if settings.openai_api_key:
+        try:
+            async with httpx.AsyncClient(timeout=40) as client:
+                res = await client.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {settings.openai_api_key}"},
+                    json={
+                        "model": settings.llm_model,
+                        "messages": [
+                            {"role": "system", "content": system},
+                            {"role": "user", "content": user_msg[:8000]},
+                        ],
+                        "temperature": 0.4,
+                    },
+                )
+                res.raise_for_status()
+                body = res.json()
+                reply = body["choices"][0]["message"]["content"]
+                usage = body.get("usage", {})
+                await _charge(company_id, usage, reason, meta)
+                total = int(usage.get("prompt_tokens", 0)) + int(usage.get("completion_tokens", 0))
+                return reply, total
+        except Exception as err:
+            logger.warning(f"OpenAI chat failed: {err}")
+
+    return None
 
 
 async def llm_score(resume_text: str, job: Job, company_id: str | None = None) -> dict | None:
-    if not llm_available():
+    if settings.llm_provider == "bedrock" and bedrock_service.is_available():
+        result = await bedrock_service.score_cv_with_bedrock(resume_text, job.description or job.title)
+        if result:
+            return result
+
+    if not settings.openai_api_key:
         return None
+
     prompt = (
         f"JOB TITLE: {job.title}\n"
         f"REQUIRED SKILLS: {', '.join(job.skills)}\n"
@@ -139,21 +158,21 @@ async def llm_score(resume_text: str, job: Job, company_id: str | None = None) -
             body = res.json()
             data = json.loads(body["choices"][0]["message"]["content"])
             await _charge(company_id, body.get("usage", {}), "CV scoring", {"job": job.title})
-    except Exception:
+            return {
+                "scores": {
+                    "skill": float(data.get("skill", 0)),
+                    "experience": float(data.get("experience", 0)),
+                    "education": float(data.get("education", 0)),
+                    "culture": float(data.get("culture", 0)),
+                },
+                "overall_score": round(float(data.get("overall", 0)), 1),
+                "matched_skills": data.get("matched_skills", []),
+                "missing_skills": data.get("missing_skills", []),
+                "ai_summary": data.get("summary"),
+                "strengths": data.get("strengths", []),
+                "risks": data.get("risks", []),
+                "scored_by": "llm",
+            }
+    except Exception as err:
+        logger.warning(f"OpenAI scoring failed: {err}")
         return None
-
-    return {
-        "scores": {
-            "skill": float(data.get("skill", 0)),
-            "experience": float(data.get("experience", 0)),
-            "education": float(data.get("education", 0)),
-            "culture": float(data.get("culture", 0)),
-        },
-        "overall_score": round(float(data.get("overall", 0)), 1),
-        "matched_skills": data.get("matched_skills", []),
-        "missing_skills": data.get("missing_skills", []),
-        "ai_summary": data.get("summary"),
-        "strengths": data.get("strengths", []),
-        "risks": data.get("risks", []),
-        "scored_by": "llm",
-    }

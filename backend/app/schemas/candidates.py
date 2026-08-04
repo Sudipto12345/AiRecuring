@@ -31,6 +31,8 @@ class CandidateOut(BaseModel):
     meeting_link: str | None = None
     has_reference_photo: bool = False
     photo_url: str | None = None
+    resume_id: str | None = None
+    resume_url: str | None = None
     added_on: datetime
     last_activity: datetime
 

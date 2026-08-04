@@ -26,7 +26,7 @@ export default function RolesPage() {
         {roles.map((r) => (
           <div key={r.key} className="a-card p-5">
             <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--admin-accent-soft)] a-accent">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg a-accent-soft a-accent">
                 <ShieldCheck className="h-5 w-5" />
               </span>
               <div>

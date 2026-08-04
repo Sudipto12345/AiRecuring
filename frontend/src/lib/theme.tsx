@@ -25,8 +25,6 @@ export function ThemeProvider({
     const saved = (typeof window !== "undefined" && window.localStorage.getItem(storageKey)) as Theme | null;
     if (saved === "light" || saved === "dark") {
       setThemeState(saved);
-    } else if (typeof window !== "undefined" && window.matchMedia?.("(prefers-color-scheme: dark)").matches) {
-      setThemeState("dark");
     }
   }, [storageKey]);
 

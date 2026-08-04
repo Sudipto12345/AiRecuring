@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ChevronRight, ChevronsUpDown, HardDrive, LogOut, Sparkles } from "lucide-react";
 
-import { AiEngineWidget } from "@/components/layout/AiEngineWidget";
+
 import { Logo } from "@/components/layout/Logo";
 import { Avatar } from "@/components/ui/Avatar";
 import { useAuth } from "@/lib/auth";
@@ -59,7 +59,7 @@ export function CompanySidebar({ onNavigate }: { onNavigate?: () => void }) {
           onClick={onNavigate}
           className={cn(
             "mb-2 flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium",
-            active === "/dashboard" ? "bg-[var(--admin-accent-soft)] a-accent" : "a-muted a-hover",
+            active === "/dashboard" ? "a-accent-soft a-accent" : "a-muted a-hover",
           )}
         >
           <DashIcon className="h-[18px] w-[18px]" />
@@ -101,7 +101,7 @@ export function CompanySidebar({ onNavigate }: { onNavigate?: () => void }) {
                           onClick={onNavigate}
                           className={cn(
                             "group flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px]",
-                            isActive ? "bg-[var(--admin-accent-soft)] a-accent font-medium" : "a-muted a-hover",
+                            isActive ? "a-accent-soft a-accent font-medium" : "a-muted a-hover",
                           )}
                         >
                           <Icon className="h-[15px] w-[15px] opacity-80" />
@@ -119,7 +119,6 @@ export function CompanySidebar({ onNavigate }: { onNavigate?: () => void }) {
       </nav>
 
       <div className="space-y-2.5 border-t a-border px-3 py-3">
-        <AiEngineWidget />
 
         <div className="grid grid-cols-2 gap-2">
           <Link

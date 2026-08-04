@@ -31,3 +31,8 @@ frontend/next-env.d.ts
 
 # Logs
 *.log
+
+# Temporary runtime dirs
+.pids/
+frontend/tmp/
+

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { FileText, UploadCloud, X } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
@@ -28,7 +28,19 @@ export function UploadDialog({
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [elapsed, setElapsed] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (busy) {
+      setElapsed(0);
+      interval = setInterval(() => {
+        setElapsed((prev) => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [busy]);
 
   function addFiles(list: FileList | null) {
     if (!list) return;
@@ -105,23 +117,47 @@ export function UploadDialog({
         </div>
 
         {files.length > 0 && (
-          <ul className="max-h-40 space-y-1.5 overflow-y-auto">
-            {files.map((f, i) => (
-              <li key={i} className="flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm">
-                <FileText className="h-4 w-4 text-ink-400" />
-                <span className="flex-1 truncate text-ink-700">{f.name}</span>
-                <button onClick={() => setFiles((p) => p.filter((_, idx) => idx !== i))} className="text-ink-400 hover:text-rose-500">
-                  <X className="h-4 w-4" />
-                </button>
-              </li>
-            ))}
-          </ul>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between rounded-lg bg-emerald-50/70 p-2.5 text-xs text-emerald-800 border border-emerald-200">
+              <span className="font-semibold">⚡ Estimated AI Credits required:</span>
+              <span className="font-bold text-emerald-700 bg-white px-2 py-0.5 rounded border border-emerald-300">
+                {files.length * 1} Credits ({files.length} CV{files.length > 1 ? "s" : ""})
+              </span>
+            </div>
+            <ul className="max-h-40 space-y-1.5 overflow-y-auto">
+              {files.map((f, i) => (
+                <li key={i} className="flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm">
+                  <FileText className="h-4 w-4 text-ink-400" />
+                  <span className="flex-1 truncate text-ink-700">{f.name}</span>
+                  <button onClick={() => setFiles((p) => p.filter((_, idx) => idx !== i))} className="text-ink-400 hover:text-rose-500">
+                    <X className="h-4 w-4" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
 
         {error && <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600">{error}</p>}
 
+        {busy && (
+          <div className="flex flex-col items-center justify-center space-y-3 py-4">
+            <div className="relative flex h-16 w-16 items-center justify-center">
+              <div className="absolute inset-0 animate-ping rounded-full border-2 border-brand-400 opacity-20"></div>
+              <div className="absolute inset-2 animate-spin rounded-full border-b-2 border-t-2 border-brand-500"></div>
+              <FileText className="h-6 w-6 text-brand-600" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-medium text-ink-700">Analyzing CVs using AI...</p>
+              <p className="mt-1 text-xs text-ink-400">
+                Time elapsed: {Math.floor(elapsed / 60)}:{(elapsed % 60).toString().padStart(2, "0")}
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="flex justify-end gap-2">
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
           <Button onClick={submit} disabled={busy}>

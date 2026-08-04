@@ -60,7 +60,7 @@ export default function FeatureFlagsPage() {
               disabled={busy === name}
               className={cn(
                 "relative h-6 w-11 rounded-full transition-colors",
-                enabled ? "bg-[var(--admin-accent)]" : "a-surface-2",
+                enabled ? "bg-indigo-600" : "a-surface-2",
               )}
             >
               <span className={cn("absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all", enabled ? "left-[22px]" : "left-0.5")} />

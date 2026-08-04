@@ -15,11 +15,13 @@ export function ExamDispatch({
   onClose,
   jobId,
   jobTitle,
+  preSelectedIds,
 }: {
   open: boolean;
   onClose: () => void;
   jobId: string;
   jobTitle: string;
+  preSelectedIds?: string[];
 }) {
   const [exams, setExams] = useState<Exam[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -47,9 +49,15 @@ export function ExamDispatch({
     if (open) {
       setResult(null);
       setError(null);
+      if (preSelectedIds && preSelectedIds.length > 0) {
+        setSelected(new Set(preSelectedIds));
+        // Expand the range so they show up if their score is outside the default 0-100 (which it shouldn't be, but just in case)
+      } else {
+        setSelected(new Set());
+      }
       load();
     }
-  }, [open, load]);
+  }, [open, load, preSelectedIds]);
 
   const inRange = useMemo(
     () => candidates.filter((c) => c.overall_score >= minScore && c.overall_score <= maxScore),
@@ -140,10 +148,12 @@ export function ExamDispatch({
           </div>
 
           <div className="mt-3 max-h-64 overflow-y-auto">
-            {inRange.length === 0 ? (
+            {candidates.length === 0 ? (
+              <p className="py-6 text-center text-sm text-ink-400">No candidates found.</p>
+            ) : inRange.length === 0 && selected.size === 0 ? (
               <p className="py-6 text-center text-sm text-ink-400">No candidates in this score range.</p>
             ) : (
-              inRange.map((c) => (
+              candidates.filter(c => inRange.includes(c) || selected.has(c.id)).map((c) => (
                 <label
                   key={c.id}
                   className="flex cursor-pointer items-center gap-3 border-b border-line/60 py-2 last:border-0 hover:bg-slate-50"
@@ -157,7 +167,23 @@ export function ExamDispatch({
                     <p className="truncate text-[11px] text-ink-400">{c.email ?? "no email"}</p>
                   </div>
                   {!c.email && <Badge tone="amber">no email</Badge>}
-                  {c.exam_status === "sent" && <Badge tone="violet">sent</Badge>}
+                  {c.exam_status === "sent" && (
+                    <div className="flex items-center gap-1.5">
+                      <Badge tone="violet">Sent</Badge>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
+                          navigator.clipboard.writeText(`${origin}/exam/${c.id}`);
+                          alert("Exam link copied to clipboard!");
+                        }}
+                        className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono text-ink-600 hover:bg-slate-200"
+                      >
+                        📋 Copy Link
+                      </button>
+                    </div>
+                  )}
                 </label>
               ))
             )}
@@ -166,9 +192,14 @@ export function ExamDispatch({
 
         {error && <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600">{error}</p>}
         {result && (
-          <p className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-            <CheckCircle2 className="h-4 w-4" /> Sent to {result.sent} candidate(s){result.skipped ? `, ${result.skipped} skipped` : ""}.
-          </p>
+          <div className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800 space-y-2 border border-emerald-200">
+            <p className="flex items-center gap-2 font-semibold">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600" /> Sent exam to {result.sent} candidate(s){result.skipped ? `, ${result.skipped} skipped` : ""}.
+            </p>
+            <p className="text-xs text-emerald-700">
+              Exam invitation links sent via email. Admin/HR can also copy direct links from candidate list above.
+            </p>
+          </div>
         )}
 
         <div className="flex items-center justify-between">

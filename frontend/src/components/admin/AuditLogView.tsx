@@ -10,7 +10,7 @@ const ACTION_TONE = (action: string) => {
   if (action.includes("delete")) return "bg-rose-500/10 text-rose-500";
   if (action.includes("impersonate")) return "bg-amber-500/10 text-amber-500";
   if (action.includes("create")) return "bg-emerald-500/10 text-emerald-500";
-  return "bg-[var(--admin-accent-soft)] a-accent";
+  return "a-accent-soft a-accent";
 };
 
 export function AuditLogView({ endpoint = "/admin/audit" }: { endpoint?: string }) {
