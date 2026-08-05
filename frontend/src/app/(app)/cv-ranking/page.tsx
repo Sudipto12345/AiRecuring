@@ -59,6 +59,9 @@ export default function CvRankingPage() {
   }, [load, autoRefresh]);
 
   const syncCandidate = (updated: Candidate) => {
+    if (updated.photo_url) {
+      updated.photo_url = updated.photo_url.split('?')[0] + '?t=' + Date.now();
+    }
     setSelected(updated);
     setCandidates((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
   };

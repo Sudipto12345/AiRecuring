@@ -7,6 +7,7 @@ import { ChartCard } from "@/components/admin/ChartCard";
 import { StatCard } from "@/components/ui/StatCard";
 import { SkeletonTable } from "@/components/ui/SkeletonTable";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Card, CardBody } from "@/components/ui/Card";
 import { ArrowRight, BarChart3, Filter, LineChart, PieChart, Sparkles, TrendingUp, Users } from "lucide-react";
 import { useApi } from "@/lib/swr";
 import type { AnalyticsSummary } from "@/lib/types";
@@ -33,6 +34,7 @@ export default function AnalyticsMainPage() {
         title="Enterprise Recruitment Analytics"
         subtitle="Real-time data visualization and AI insights into hiring speed, candidate conversion, and talent supply"
         badge="Analytics Dashboard"
+        image="/images/analytics/empty.png"
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -40,7 +42,8 @@ export default function AnalyticsMainPage() {
           const Icon = sp.icon;
           return (
             <Link key={sp.href} href={sp.href} className={`block group animate-fade-slide-up stagger-${i + 1}`}>
-              <div className="a-card p-5 border border-line/80 hover:border-brand-500/50 transition-all duration-200 h-full flex flex-col justify-between">
+              <Card className="hover:border-brand-500/50 transition-all duration-200 h-full flex flex-col justify-between">
+                <CardBody className="pt-5 flex-1 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <div className="p-2.5 rounded-xl bg-brand-50/80 text-brand-600 border border-brand-200/60 group-hover:scale-105 transition-transform">
@@ -56,7 +59,8 @@ export default function AnalyticsMainPage() {
                 <div className="mt-4 pt-3 border-t border-line/60 flex items-center text-[11px] font-semibold text-brand-600">
                   Explore module &rarr;
                 </div>
-              </div>
+                </CardBody>
+              </Card>
             </Link>
           );
         })}

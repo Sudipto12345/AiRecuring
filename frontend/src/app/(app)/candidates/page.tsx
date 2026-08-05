@@ -29,6 +29,7 @@ import { StatCard } from "@/components/ui/StatCard";
 import { api } from "@/lib/api";
 import type { Candidate, CandidateStats, Job } from "@/lib/types";
 
+const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api").replace(/\/api\/?$/, "");
 const PAGE_SIZE = 10;
 
 export default function CandidatesPage() {
@@ -61,6 +62,9 @@ export default function CandidatesPage() {
 
   useEffect(() => {
     load();
+  }, [load]);
+
+  useEffect(() => {
     if (!autoRefresh) return;
     const timer = setInterval(() => {
       load();
@@ -126,6 +130,9 @@ export default function CandidatesPage() {
   }, [search, jobFilter, stageFilter]);
 
   function syncCandidate(c: Candidate) {
+    if (c.photo_url) {
+      c.photo_url = c.photo_url.split('?')[0] + '?t=' + Date.now();
+    }
     setSelected(c);
     setCandidates((rows) => rows.map((r) => (r.id === c.id ? c : r)));
   }
@@ -330,7 +337,7 @@ export default function CandidatesPage() {
                       >
                         <td className="px-5 py-3">
                           <div className="flex items-center gap-3">
-                            <Avatar name={c.name} src={c.photo_url ? `http://localhost:8000${c.photo_url}` : undefined} size="sm" />
+                            <Avatar name={c.name} src={c.photo_url ? `${API_ORIGIN}${c.photo_url}` : undefined} size="sm" />
                             <div className="min-w-0">
                               <p className="truncate font-medium text-ink-900">{c.name}</p>
                               <p className="truncate text-xs text-ink-400">{c.email}</p>

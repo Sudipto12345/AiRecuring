@@ -12,7 +12,7 @@ export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
         // Layout & shape
         'relative rounded-2xl overflow-hidden',
         // Surface & Glassmorphism
-        'bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border border-slate-200/60 dark:border-zinc-800/80',
+        'backdrop-blur-md bg-white/80 dark:bg-zinc-950/80 border border-slate-100 dark:border-zinc-800',
         // Shadow & Depth
         'shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.04)] dark:shadow-none',
         // Micro-interaction transition

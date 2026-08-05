@@ -10,25 +10,18 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input, Label } from "@/components/ui/Field";
 import { StatCard } from "@/components/ui/StatCard";
-import { api } from "@/lib/api";
+import { useApi } from "@/lib/swr";
 import type { Job } from "@/lib/types";
 
 export default function CareerPortalPage() {
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading: loading } = useApi<Job[]>("/jobs");
+  const jobs = data || [];
   const [companyName, setCompanyName] = useState("Acme Technologies");
   const [tagline, setTagline] = useState("Building the future of artificial intelligence & cloud infrastructure");
   const [brandColor, setBrandColor] = useState("#2a7553");
   const [logoUrl, setLogoUrl] = useState("/images/career-portal/hero.png");
   const [copied, setCopied] = useState(false);
   const [previewTab, setPreviewTab] = useState<"desktop" | "branding">("branding");
-
-  useEffect(() => {
-    api<Job[]>("/jobs")
-      .then((data) => setJobs(data || []))
-      .catch((err) => console.error("Failed to load jobs for career portal", err))
-      .finally(() => setLoading(false));
-  }, []);
 
   const publishedCount = jobs.filter((j) => j.status === "active" || j.status === "Published" || !j.status).length;
 
@@ -82,7 +75,7 @@ export default function CareerPortalPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Customization Panel */}
         <div className="lg:col-span-5 space-y-6">
-          <Card className="p-5 border border-line/80 bg-white/95 backdrop-blur-md shadow-xs animate-fade-slide-up stagger-5">
+          <Card className="p-5 shadow-xs animate-fade-slide-up stagger-5">
             <div className="flex items-center gap-2 mb-4 pb-3 border-b border-line/60">
               <Palette className="h-5 w-5 text-brand-600" />
               <h3 className="font-display text-base font-bold text-ink-900">Portal Branding &amp; Customization</h3>
@@ -129,7 +122,7 @@ export default function CareerPortalPage() {
 
         {/* Right Live Interactive Preview */}
         <div className="lg:col-span-7">
-          <Card className="p-0 overflow-hidden border border-line/80 shadow-md bg-white/95 backdrop-blur-md animate-fade-slide-up stagger-6">
+          <Card className="p-0 overflow-hidden shadow-md animate-fade-slide-up stagger-6">
             {/* Header bar of mock portal browser window */}
             <div className="flex items-center justify-between px-4 py-3 bg-slate-100 border-b border-line/80">
               <div className="flex items-center gap-2">

@@ -31,6 +31,8 @@ import { Donut } from "@/components/charts/Donut";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
+import { SkeletonTable } from "@/components/ui/SkeletonTable";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useAuth } from "@/lib/auth";
 import { useApi } from "@/lib/swr";
 import type { AnalyticsSummary, Candidate, MonitoringSummary } from "@/lib/types";
@@ -85,9 +87,11 @@ export default function DashboardPage() {
   const { session } = useAuth();
   const firstName = session?.user.name.split(" ")[0] ?? "there";
 
-  const { data: analytics } = useApi<AnalyticsSummary>("/analytics/summary");
-  const { data: monitoring } = useApi<MonitoringSummary>("/monitoring/summary");
-  const { data: candidates } = useApi<Candidate[]>("/candidates?sort=score");
+  const { data: analytics, isLoading: analyticsLoading } = useApi<AnalyticsSummary>("/analytics/summary");
+  const { data: monitoring, isLoading: monitoringLoading } = useApi<MonitoringSummary>("/monitoring/summary");
+  const { data: candidates, isLoading: candidatesLoading } = useApi<Candidate[]>("/candidates?sort=score");
+
+  const isLoading = analyticsLoading || monitoringLoading || candidatesLoading;
   const topCandidates = candidates?.slice(0, 5) ?? [];
 
   const totals = analytics?.totals ?? {};
@@ -192,7 +196,16 @@ export default function DashboardPage() {
         }
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {isLoading ? (
+        <SkeletonTable rows={4} cols={4} />
+      ) : !analytics ? (
+        <EmptyState
+          title="No Dashboard Data Available"
+          description="We couldn't fetch your dashboard analytics. Please ensure your backend services are running."
+        />
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((s) => (
           <StatCard key={s.label} {...s} />
         ))}
@@ -374,6 +387,8 @@ export default function DashboardPage() {
       <div className="flex items-center justify-end gap-1 pb-2 text-[11px] text-ink-400">
         <HardDriveDownload className="h-3.5 w-3.5" /> Data synced just now
       </div>
+      </>
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, CheckCircle2, Mail, MapPin, Phone, ScanFace, Sparkles, Users, X } from "lucide-react";
 
 import { DispatchActions } from "@/components/candidates/DispatchActions";
@@ -55,6 +56,32 @@ export function CandidateDetail({
   const [similarBusy, setSimilarBusy] = useState(false);
   const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
   const [tab, setTab] = useState<(typeof DRAWER_TABS)[number]>("AI Scoring Details");
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if ((tab === "Resume File" || pdfPreviewOpen) && !pdfUrl) {
+      fetch(`${API}/candidates/${candidate.id}/resume`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error();
+          return res.blob();
+        })
+        .then((blob) => setPdfUrl(URL.createObjectURL(blob)))
+        .catch(() => console.error("Failed to fetch PDF"));
+    }
+  }, [tab, pdfPreviewOpen, candidate.id, pdfUrl]);
+
+  async function handleDownload(e: React.MouseEvent) {
+    e.preventDefault();
+    if (!pdfUrl) return;
+    const a = document.createElement("a");
+    a.href = pdfUrl;
+    a.download = `${candidate.name}_Resume.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
 
   async function findSimilar() {
     setSimilarBusy(true);
@@ -231,10 +258,8 @@ export function CandidateDetail({
 
           <div className="flex flex-col sm:flex-row gap-2 pt-2">
             <a
-              href={`${API}/candidates/${candidate.id}/resume`}
-              target="_blank"
-              rel="noreferrer"
-              download
+              href="#"
+              onClick={handleDownload}
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-brand-700 transition shadow-xs flex-1"
             >
               📥 Download PDF File
@@ -315,17 +340,15 @@ export function CandidateDetail({
         <div className="space-y-3">
           <div className="h-[550px] w-full overflow-hidden rounded-xl border border-line bg-slate-100">
             <iframe
-              src={`${API}/candidates/${candidate.id}/resume`}
+              src={pdfUrl || ""}
               className="h-full w-full border-0"
               title={`${candidate.name} CV Resume`}
             />
           </div>
           <div className="flex justify-end gap-2">
             <a
-              href={`${API}/candidates/${candidate.id}/resume`}
-              target="_blank"
-              rel="noreferrer"
-              download
+              href="#"
+              onClick={handleDownload}
               className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-700 transition"
             >
               📥 Download PDF
@@ -374,20 +397,35 @@ export function CandidateDrawer({
   onDispatched?: (c: Candidate) => void;
   onUpdated?: (c: Candidate) => void;
 }) {
-  if (!open || !candidate) return null;
   return (
-    <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-ink-900/30" onClick={onClose} />
-      <aside className="animate-drawer absolute right-0 top-0 h-full w-[90%] max-w-md overflow-y-auto bg-white shadow-pop">
-        <CandidateDetail
-          candidate={candidate}
-          onClose={onClose}
-          onStageChange={onStageChange}
-          allowDispatch={allowDispatch}
-          onDispatched={onDispatched}
-          onUpdated={onUpdated}
-        />
-      </aside>
-    </div>
+    <AnimatePresence>
+      {open && candidate && (
+        <div className="fixed inset-0 z-50">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-ink-900/30"
+            onClick={onClose}
+          />
+          <motion.aside
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="absolute right-0 top-0 h-full w-[90%] max-w-md overflow-y-auto bg-white shadow-pop dark:bg-ink-950"
+          >
+            <CandidateDetail
+              candidate={candidate}
+              onClose={onClose}
+              onStageChange={onStageChange}
+              allowDispatch={allowDispatch}
+              onDispatched={onDispatched}
+              onUpdated={onUpdated}
+            />
+          </motion.aside>
+        </div>
+      )}
+    </AnimatePresence>
   );
 }

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SkeletonTable } from "@/components/ui/SkeletonTable";
 import { useApi } from "@/lib/swr";
-import { Search, Download, FileText } from "lucide-react";
+import { Search, Download, FileText, X, Eye } from "lucide-react";
 import { getToken } from "@/lib/api";
 
 interface Invoice {
@@ -24,6 +24,7 @@ interface Invoice {
 export default function InvoicesPage() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { data: invoices, error, isLoading } = useApi<Invoice[]>("/billing/invoices");
 
   const filteredInvoices = invoices?.filter((inv) => {
@@ -32,25 +33,20 @@ export default function InvoicesPage() {
     return true;
   });
 
-  const handleDownloadPdf = async (id: string, e: React.MouseEvent) => {
+  const handleViewPdf = async (id: string, e: React.MouseEvent) => {
     e.preventDefault();
     const token = getToken();
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/billing/invoices/${id}/pdf`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      if (!res.ok) throw new Error("Failed to download PDF");
+      if (!res.ok) throw new Error("Failed to load PDF");
       const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Invoice_${id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+      const url = window.URL.createObjectURL(new Blob([blob], { type: "application/pdf" }));
+      setPreviewUrl(url);
     } catch (err) {
       console.error(err);
-      alert("Error downloading PDF");
+      alert("Error loading PDF");
     }
   };
 
@@ -150,8 +146,8 @@ export default function InvoicesPage() {
                       </Badge>
                     </td>
                     <td className="py-4 px-4 text-right">
-                      <Button variant="ghost" size="sm" onClick={(e) => handleDownloadPdf(inv.id || inv._id, e)}>
-                        <Download className="h-4 w-4" />
+                      <Button variant="ghost" size="sm" onClick={(e) => handleViewPdf(inv.id || inv._id, e)}>
+                        <Eye className="h-4 w-4 mr-2" /> View
                       </Button>
                     </td>
                   </tr>
@@ -161,6 +157,25 @@ export default function InvoicesPage() {
           </div>
         )}
       </Card>
+      
+      {previewUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-4xl h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800">
+            <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800">
+              <h3 className="font-semibold text-lg">Invoice Preview</h3>
+              <div className="flex gap-2">
+                <a href={previewUrl} download="Invoice.pdf" className="px-4 py-2 bg-indigo-50 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 rounded-xl font-medium text-sm hover:bg-indigo-100 dark:hover:bg-indigo-500/30 transition-colors flex items-center gap-2">
+                  <Download className="w-4 h-4" /> Download
+                </a>
+                <button onClick={() => setPreviewUrl(null)} className="p-2 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            <iframe src={previewUrl} className="w-full flex-1 border-0" title="PDF Preview" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -324,6 +324,57 @@ export default function AdminDashboardPage() {
           series={[{ key: "credits", color: "#6366f1" }]}
         />
       </div>
+
+      {/* ── System Status Telemetry ── */}
+      <section>
+        <p className="mb-2 mt-4 text-[10px] font-bold uppercase tracking-widest a-faint">System Pulse & Connections</p>
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+          <ChartCard
+            title="CPU Usage & Telemetry"
+            subtitle="Server node utilization across cluster"
+            type="area"
+            height={180}
+            data={[
+              { label: "10:00", cpu: 14, mem: 45 },
+              { label: "10:05", cpu: 22, mem: 48 },
+              { label: "10:10", cpu: 18, mem: 50 },
+              { label: "10:15", cpu: 45, mem: 52 },
+              { label: "10:20", cpu: 32, mem: 51 },
+              { label: "10:25", cpu: 28, mem: 49 },
+              { label: "10:30", cpu: 15, mem: 46 }
+            ]}
+            series={[{ key: "cpu", color: "#3b82f6", label: "CPU %" }, { key: "mem", color: "#8b5cf6", label: "Memory %" }]}
+          />
+          <ChartCard
+            title="Database IOPS"
+            subtitle="MongoDB cluster operations & latency"
+            type="line"
+            height={180}
+            data={[
+              { label: "10:00", read: 300, write: 150 },
+              { label: "10:05", read: 420, write: 180 },
+              { label: "10:10", read: 250, write: 120 },
+              { label: "10:15", read: 600, write: 300 },
+              { label: "10:20", read: 550, write: 280 },
+              { label: "10:25", read: 400, write: 200 },
+              { label: "10:30", read: 350, write: 160 }
+            ]}
+            series={[{ key: "read", color: "#10b981", label: "Read (IOPS)" }, { key: "write", color: "#f59e0b", label: "Write (IOPS)" }]}
+          />
+          <ChartCard
+            title="Sentinel & Queue Connections"
+            subtitle="Redis Sentinel health and active workers"
+            type="bar"
+            height={180}
+            data={[
+              { label: "Node 1", active: 12, idle: 8, max: 20 },
+              { label: "Node 2", active: 15, idle: 5, max: 20 },
+              { label: "Node 3", active: 8, idle: 12, max: 20 }
+            ]}
+            series={[{ key: "active", color: "#ef4444", label: "Active" }, { key: "idle", color: "#64748b", label: "Idle" }]}
+          />
+        </div>
+      </section>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { PageHero } from "@/components/ui/PageHero";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SkeletonTable } from "@/components/ui/SkeletonTable";
+import { Card, CardBody } from "@/components/ui/Card";
 import { useApi } from "@/lib/swr";
 import type { AnalyticsSummary } from "@/lib/types";
 
@@ -25,7 +26,8 @@ export default function HiringFunnelPage() {
         badge="Conversion Analytics"
       />
 
-      <div className="a-card p-6 border border-line/80 shadow-sm bg-white/90 backdrop-blur-md">
+      <Card className="shadow-sm">
+        <CardBody className="pt-6">
         {loading ? (
           <SkeletonTable rows={5} cols={4} />
         ) : pipeline.length === 0 ? (
@@ -60,7 +62,8 @@ export default function HiringFunnelPage() {
             })}
           </div>
         )}
-      </div>
+        </CardBody>
+      </Card>
     </div>
   );
 }
