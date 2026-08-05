@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Award, FileText, Search, Send, Sparkles, Star, TrendingDown, TrendingUp, UploadCloud } from "lucide-react";
+import { Award, FileText, RefreshCw, Search, Send, Sparkles, Star, TrendingDown, TrendingUp, UploadCloud } from "lucide-react";
 
 import { ExamDispatch } from "@/components/jobs/ExamDispatch";
-import { CandidateDetail } from "@/components/candidates/CandidateDrawer";
+import { CandidateDetail, CandidateDrawer } from "@/components/candidates/CandidateDrawer";
 import { UploadDialog } from "@/components/candidates/UploadDialog";
 import { PageHero } from "@/components/ui/PageHero";
 import { SkeletonTable } from "@/components/ui/SkeletonTable";
@@ -17,7 +17,10 @@ import { ScoreRing } from "@/components/ui/ScoreRing";
 import { SkillChip } from "@/components/ui/SkillChip";
 import { StatCard } from "@/components/ui/StatCard";
 import { api } from "@/lib/api";
+import { formatExperienceDuration } from "@/lib/utils";
 import type { Candidate, Job } from "@/lib/types";
+
+const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api").replace(/\/api\/?$/, "");
 
 export default function CvRankingPage() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -29,6 +32,7 @@ export default function CvRankingPage() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [multiSelect, setMultiSelect] = useState<Set<string>>(new Set());
   const [examDispatchOpen, setExamDispatchOpen] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
 
   const load = useCallback(async () => {
     try {
@@ -45,6 +49,24 @@ export default function CvRankingPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const timer = setInterval(() => {
+      load();
+    }, 15000);
+    return () => clearInterval(timer);
+  }, [load, autoRefresh]);
+
+  const syncCandidate = (updated: Candidate) => {
+    setSelected(updated);
+    setCandidates((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+  };
+
+  const changeStage = async (id: string, stage: string) => {
+    const updated = await api<Candidate>(`/candidates/${id}/stage`, { method: "PATCH", body: { stage } });
+    syncCandidate(updated);
+  };
 
   const filtered = useMemo(
     () =>
@@ -130,6 +152,15 @@ export default function CvRankingPage() {
                 <option key={j.id} value={j.id}>{j.title}</option>
               ))}
             </Select>
+            <button
+              onClick={() => setAutoRefresh(!autoRefresh)}
+              className={`inline-flex h-10 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition ${
+                autoRefresh ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-2xs" : "border-line bg-white text-ink-500"
+              }`}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${autoRefresh ? "animate-spin" : ""}`} />
+              {autoRefresh ? "Auto-Refresh On (15s)" : "Auto-Refresh Off"}
+            </button>
           </Card>
 
           {loading ? (
@@ -171,13 +202,14 @@ export default function CvRankingPage() {
                       <th className="px-4 py-3.5">Target Role</th>
                       <th className="px-4 py-3.5 text-center">AI Match Ring</th>
                       <th className="px-4 py-3.5">Top Skills</th>
-                      <th className="px-4 py-3.5">Exp</th>
+                      <th className="px-4 py-3.5">Exp Duration</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line/60">
                     {filtered.map((c, i) => {
                       const isTopPerformer = i < 3 || c.overall_score >= 85;
                       const staggerClass = `stagger-${(i % 6) + 1}`;
+                      const avatarSrc = c.photo_url ? `${API_ORIGIN}${c.photo_url}` : undefined;
                       return (
                         <tr
                           key={c.id}
@@ -215,7 +247,7 @@ export default function CvRankingPage() {
                           </td>
                           <td className="px-4 py-3.5">
                             <div className="flex items-center gap-3">
-                              <Avatar name={c.name} size="sm" />
+                              <Avatar name={c.name} src={avatarSrc} size="sm" />
                               <div className="min-w-0">
                                 <p className="truncate font-semibold text-ink-900 flex items-center gap-1.5">
                                   {c.name}
@@ -238,7 +270,11 @@ export default function CvRankingPage() {
                               )}
                             </div>
                           </td>
-                          <td className="px-4 py-3.5 text-ink-600 font-medium">{c.experience_years}y</td>
+                          <td className="px-4 py-3.5">
+                            <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800 border border-emerald-200">
+                              {formatExperienceDuration(c.experience_years)}
+                            </span>
+                          </td>
                         </tr>
                       );
                     })}
@@ -252,10 +288,29 @@ export default function CvRankingPage() {
         {selected && (
           <div className="hidden w-[390px] shrink-0 lg:block animate-fade-slide-in">
             <Card className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto border border-line/80 shadow-md">
-              <CandidateDetail candidate={selected} onClose={() => setSelected(null)} />
+              <CandidateDetail
+                candidate={selected}
+                onClose={() => setSelected(null)}
+                onStageChange={changeStage}
+                allowDispatch
+                onDispatched={syncCandidate}
+                onUpdated={syncCandidate}
+              />
             </Card>
           </div>
         )}
+      </div>
+
+      <div className="lg:hidden">
+        <CandidateDrawer
+          candidate={selected}
+          open={!!selected}
+          onClose={() => setSelected(null)}
+          onStageChange={changeStage}
+          allowDispatch
+          onDispatched={syncCandidate}
+          onUpdated={syncCandidate}
+        />
       </div>
 
       {multiSelect.size > 0 && (
@@ -289,4 +344,5 @@ export default function CvRankingPage() {
     </div>
   );
 }
+
 

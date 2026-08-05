@@ -27,6 +27,7 @@ export default function QuestionBankPage() {
   const [busy, setBusy] = useState(false);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
@@ -34,12 +35,16 @@ export default function QuestionBankPage() {
       setLoading(false);
       return;
     }
+    setLoading(true);
+    setFetchError(null);
     try {
       setQuestions(await api<Question[]>("/questions"));
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to load questions", err);
+      setFetchError(err?.message || "Failed to fetch question bank. Please check your network connection or server status.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [enabled]);
 
   useEffect(() => {
@@ -123,7 +128,13 @@ export default function QuestionBankPage() {
   const filtered = useMemo(() => {
     return questions.filter((q) => {
       if (categoryFilter && q.category !== categoryFilter) return false;
-      if (search && !q.text.toLowerCase().includes(search.toLowerCase())) return false;
+      if (search) {
+        const qLower = search.toLowerCase();
+        const matchesText = q.text.toLowerCase().includes(qLower);
+        const matchesCategory = (q.category || "").toLowerCase().includes(qLower);
+        const matchesOptions = q.options?.some((opt) => opt.toLowerCase().includes(qLower));
+        if (!matchesText && !matchesCategory && !matchesOptions) return false;
+      }
       return true;
     });
   }, [questions, search, categoryFilter]);
@@ -270,7 +281,20 @@ export default function QuestionBankPage() {
       </Card>
 
       {/* Grid of Question Cards */}
-      {loading ? (
+      {fetchError ? (
+        <Card className="p-8 border border-rose-200 bg-rose-50/50">
+          <div className="flex flex-col items-center text-center space-y-3">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-100 text-rose-600 font-bold">
+              ⚠️
+            </span>
+            <h3 className="text-lg font-bold text-rose-900">Failed to Load Questions</h3>
+            <p className="text-xs text-rose-700 max-w-md">{fetchError}</p>
+            <Button onClick={() => load()} className="bg-rose-600 text-white hover:bg-rose-700 font-semibold shadow-xs">
+              🔄 Retry Fetching Questions
+            </Button>
+          </div>
+        </Card>
+      ) : loading ? (
         <SkeletonTable rows={4} cols={4} />
       ) : filtered.length === 0 ? (
         <Card className="p-8 border border-line/80 bg-white/90">

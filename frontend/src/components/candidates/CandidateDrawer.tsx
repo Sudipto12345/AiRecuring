@@ -14,11 +14,15 @@ import { SkillChip } from "@/components/ui/SkillChip";
 import { api, getToken } from "@/lib/api";
 import type { Candidate } from "@/lib/types";
 
+import { formatExperienceDuration } from "@/lib/utils";
+import { Modal } from "@/components/ui/Modal";
+
 interface SimilarHit {
   candidate_id: string;
   name: string | null;
   overall_score: number;
   similarity: number;
+  shared_skills?: string[];
 }
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
@@ -49,6 +53,7 @@ export function CandidateDetail({
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [similar, setSimilar] = useState<SimilarHit[] | null>(null);
   const [similarBusy, setSimilarBusy] = useState(false);
+  const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
   const [tab, setTab] = useState<(typeof DRAWER_TABS)[number]>("AI Scoring Details");
 
   async function findSimilar() {
@@ -77,13 +82,16 @@ export function CandidateDetail({
         const d = await res.json().catch(() => null);
         throw new Error(d?.detail || "Upload failed");
       }
-      (onUpdated ?? onDispatched)?.(await res.json());
+      const updatedCandidate = await res.json();
+      (onUpdated ?? onDispatched)?.(updatedCandidate);
     } catch (err) {
       setPhotoError(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setPhotoBusy(false);
     }
   }
+
+  const expFormatted = formatExperienceDuration(candidate.experience_years);
 
   return (
     <div className="relative p-5">
@@ -101,8 +109,11 @@ export function CandidateDetail({
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-base font-semibold text-ink-900">{candidate.name}</h3>
           <p className="truncate text-sm text-ink-500">{candidate.job_title}</p>
-          <div className="mt-1.5 flex items-center gap-2">
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
             <StageBadge stage={candidate.stage} />
+            <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 border border-emerald-200">
+              Exp: {expFormatted}
+            </span>
             {candidate.has_reference_photo && (
               <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600">
                 <ScanFace className="h-3 w-3" /> Realtime Photo Verified
@@ -117,7 +128,7 @@ export function CandidateDetail({
         <button
           onClick={() => photoRef.current?.click()}
           disabled={photoBusy}
-          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-line py-2 text-xs font-medium text-ink-500 hover:border-brand-300 hover:text-brand-600"
+          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-line py-2 text-xs font-medium text-ink-500 hover:border-brand-300 hover:text-brand-600 transition-colors"
         >
           <ScanFace className="h-3.5 w-3.5" />
           {photoBusy ? "Updating face photo…" : candidate.has_reference_photo ? "Replace identity photo" : "Add identity photo"}
@@ -132,13 +143,13 @@ export function CandidateDetail({
         {candidate.location && <p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-ink-400" /> {candidate.location}</p>}
       </div>
 
-      <div className="mt-4 flex gap-1 border-b border-line">
+      <div className="mt-4 flex gap-1 border-b border-line overflow-x-auto no-scrollbar">
         {DRAWER_TABS.map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`border-b-2 px-3 py-2 text-xs font-medium transition ${
-              tab === t ? "border-brand-600 text-brand-700" : "border-transparent text-ink-400 hover:text-ink-700"
+            className={`border-b-2 px-3 py-2 text-xs font-medium transition whitespace-nowrap ${
+              tab === t ? "border-brand-600 text-brand-700 font-semibold" : "border-transparent text-ink-400 hover:text-ink-700"
             }`}
           >
             {t}
@@ -148,7 +159,7 @@ export function CandidateDetail({
 
       {tab === "AI Scoring Details" && (
         <>
-          <div className="mt-5 rounded-xl border border-line p-4">
+          <div className="mt-5 rounded-xl border border-line p-4 bg-slate-50/50">
             <p className="mb-3 text-[13px] font-semibold text-ink-900">AI Scoring Metrics</p>
             <div className="space-y-2.5">
               <MetricBar label="Skill Match" value={Math.round(s.skill ?? 0)} />
@@ -195,30 +206,47 @@ export function CandidateDetail({
       )}
 
       {tab === "Parsed Data" && (
-        <div className="mt-4 space-y-2 text-sm text-ink-600">
-          <p><span className="font-medium text-ink-800">Candidate Name:</span> {candidate.name}</p>
-          <p><span className="font-medium text-ink-800">Email Address:</span> {candidate.email || "—"}</p>
-          <p><span className="font-medium text-ink-800">Phone Number:</span> {candidate.phone || "—"}</p>
-          <p><span className="font-medium text-ink-800">Location:</span> {candidate.location || "—"}</p>
-          <p><span className="font-medium text-ink-800">Calculated Experience:</span> {candidate.experience_years ? `${candidate.experience_years.toFixed(1)} years` : "0.0 years"}</p>
-          <p><span className="font-medium text-ink-800">Education Degree:</span> {candidate.education || "Not specified"}</p>
-          <p><span className="font-medium text-ink-800">Source:</span> {candidate.source || "CV Upload"}</p>
+        <div className="mt-4 space-y-2.5 text-sm text-ink-600 bg-slate-50/70 p-4 rounded-xl border border-line">
+          <p><span className="font-semibold text-ink-800">Candidate Name:</span> {candidate.name}</p>
+          <p><span className="font-semibold text-ink-800">Email Address:</span> {candidate.email || "—"}</p>
+          <p><span className="font-semibold text-ink-800">Phone Number:</span> {candidate.phone || "—"}</p>
+          <p><span className="font-semibold text-ink-800">Location:</span> {candidate.location || "—"}</p>
+          <p><span className="font-semibold text-ink-800">Calculated Experience Duration:</span> <span className="font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded-md border border-brand-200">{expFormatted}</span> ({candidate.experience_years ? `${candidate.experience_years.toFixed(1)} yrs` : "0 yrs"})</p>
+          <p><span className="font-semibold text-ink-800">Education Degree:</span> {candidate.education || "Not specified"}</p>
+          <p><span className="font-semibold text-ink-800">Source:</span> {candidate.source || "CV Upload"}</p>
         </div>
       )}
 
       {tab === "Resume File" && (
-        <div className="mt-4 rounded-xl border border-line p-4 text-sm text-ink-600 space-y-3">
-          <p className="font-medium text-ink-800">Uploaded CV Document</p>
-          <p className="text-xs text-ink-400">View or download candidate's original resume file for full verification.</p>
-          <a
-            href={`${API}/candidates/${candidate.id}/resume`}
-            target="_blank"
-            rel="noreferrer"
-            download
-            className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-700 transition"
-          >
-            📄 Download / View Original CV PDF
-          </a>
+        <div className="mt-4 rounded-xl border border-line p-4 text-sm text-ink-600 space-y-4 bg-white shadow-xs">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-600 border border-rose-200 font-bold text-sm">
+              PDF
+            </span>
+            <div>
+              <p className="font-semibold text-ink-900 text-sm">Uploaded Resume Document</p>
+              <p className="text-xs text-ink-400">PDF / Docx original candidate file</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-2 pt-2">
+            <a
+              href={`${API}/candidates/${candidate.id}/resume`}
+              target="_blank"
+              rel="noreferrer"
+              download
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-brand-700 transition shadow-xs flex-1"
+            >
+              📥 Download PDF File
+            </a>
+            <Button
+              variant="secondary"
+              onClick={() => setPdfPreviewOpen(true)}
+              className="text-xs flex-1"
+            >
+              👁️ View PDF Preview
+            </Button>
+          </div>
         </div>
       )}
 
@@ -244,24 +272,37 @@ export function CandidateDetail({
       {tab === "AI Scoring Details" && allowDispatch && <DispatchActions candidate={candidate} onDispatched={onDispatched} />}
 
       {tab === "AI Scoring Details" && (
-        <div className="mt-5 rounded-xl border border-line p-4">
+        <div className="mt-5 rounded-xl border border-line p-4 bg-slate-50/60">
           <div className="flex items-center justify-between">
             <p className="flex items-center gap-1.5 text-[13px] font-semibold text-ink-900">
-              <Users className="h-4 w-4 text-brand-500" /> Similar Candidates (Skill & Experience Topic-Wise)
+              <Users className="h-4 w-4 text-brand-500" /> Topic-Wise Skill Similarity
             </p>
-            <button onClick={findSimilar} disabled={similarBusy} className="text-xs font-medium text-brand-600 hover:underline">
-              {similarBusy ? "Searching…" : "Find similar"}
+            <button onClick={findSimilar} disabled={similarBusy} className="text-xs font-semibold text-brand-600 hover:underline">
+              {similarBusy ? "Matching topics…" : "Find Similar Candidates"}
             </button>
           </div>
           {similar !== null && (
             <div className="mt-3 space-y-2">
               {similar.length === 0 ? (
-                <p className="text-xs text-ink-400">No similar candidates found yet.</p>
+                <p className="text-xs text-ink-400">No topic-matched candidates found in this role pool.</p>
               ) : (
                 similar.map((m) => (
-                  <div key={m.candidate_id} className="flex items-center justify-between text-sm p-2 rounded-lg bg-emerald-50/50">
-                    <span className="truncate font-medium text-ink-700">{m.name}</span>
-                    <span className="ml-2 shrink-0 text-xs font-semibold text-emerald-700">{m.similarity}% topic match</span>
+                  <div key={m.candidate_id} className="flex flex-col gap-1 p-2.5 rounded-xl bg-white border border-line/80 shadow-2xs">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="truncate font-semibold text-ink-900">{m.name || "Candidate"}</span>
+                      <span className="shrink-0 text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                        {m.similarity}% topic match
+                      </span>
+                    </div>
+                    {m.shared_skills && m.shared_skills.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {m.shared_skills.map((sk) => (
+                          <span key={sk} className="text-[10px] font-medium text-brand-700 bg-brand-50 px-1.5 py-0.5 rounded">
+                            {sk}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))
               )}
@@ -269,6 +310,30 @@ export function CandidateDetail({
           )}
         </div>
       )}
+
+      <Modal open={pdfPreviewOpen} onClose={() => setPdfPreviewOpen(false)} title={`CV Document Preview: ${candidate.name}`} size="max-w-4xl">
+        <div className="space-y-3">
+          <div className="h-[550px] w-full overflow-hidden rounded-xl border border-line bg-slate-100">
+            <iframe
+              src={`${API}/candidates/${candidate.id}/resume`}
+              className="h-full w-full border-0"
+              title={`${candidate.name} CV Resume`}
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <a
+              href={`${API}/candidates/${candidate.id}/resume`}
+              target="_blank"
+              rel="noreferrer"
+              download
+              className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-700 transition"
+            >
+              📥 Download PDF
+            </a>
+            <Button variant="secondary" onClick={() => setPdfPreviewOpen(false)}>Close Preview</Button>
+          </div>
+        </div>
+      </Modal>
 
       <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2 text-[11px] text-blue-800">
         AI scores are hints — HR still signs off.

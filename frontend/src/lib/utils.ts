@@ -21,3 +21,17 @@ export function scoreBand(score: number) {
   if (score >= 55) return { label: "Average", color: "#f59e0b" };
   return { label: "Low", color: "#ef4444" };
 }
+
+export function formatExperienceDuration(years: number | undefined | null): string {
+  if (years === undefined || years === null || isNaN(years) || years <= 0) return "0y 0m";
+  const fullYears = Math.floor(years);
+  const months = Math.round((years - fullYears) * 12);
+  if (months === 12) {
+    return `${fullYears + 1}y 0m`;
+  }
+  if (fullYears === 0) {
+    return `${months}m`;
+  }
+  return `${fullYears}y ${months}m`;
+}
+
