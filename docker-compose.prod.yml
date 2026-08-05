@@ -121,6 +121,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://3.25.116.241:8000/api}
     container_name: airecruit-frontend-prod
     restart: unless-stopped
     ports:
