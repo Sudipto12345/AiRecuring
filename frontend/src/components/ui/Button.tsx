@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 type Variant =
   | 'primary'
   | 'secondary'
+  | 'outline'
   | 'ghost'
   | 'soft'
   | 'danger'
@@ -31,10 +32,16 @@ const variants: Record<Variant, string> = {
   ].join(' '),
 
   secondary: [
-    'bg-white border border-slate-200 text-ink-700',
+    'bg-white border border-slate-200 text-ink-700 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200',
     'shadow-sm',
-    'hover:bg-slate-50 hover:border-slate-300 hover:shadow-md',
+    'hover:bg-slate-50 hover:border-slate-300 hover:shadow-md dark:hover:bg-zinc-700',
     'disabled:opacity-60 disabled:shadow-none',
+  ].join(' '),
+
+  outline: [
+    'bg-transparent border border-slate-300 text-ink-700 dark:border-zinc-700 dark:text-zinc-200',
+    'hover:bg-slate-100 dark:hover:bg-zinc-800',
+    'disabled:opacity-60',
   ].join(' '),
 
   ghost: [

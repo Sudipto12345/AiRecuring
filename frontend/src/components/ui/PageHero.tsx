@@ -7,6 +7,8 @@ interface PageHeroProps {
   gradient?: string;
   badge?: string;
   actions?: ReactNode;
+  action?: ReactNode;
+  icon?: any;
 }
 
 export function PageHero({
@@ -16,7 +18,10 @@ export function PageHero({
   gradient = "var(--gradient-brand)",
   badge,
   actions,
+  action,
+  icon: Icon,
 }: PageHeroProps) {
+  const finalActions = actions || action;
   return (
     <div 
       className="relative mb-6 overflow-hidden rounded-2xl border border-line shadow-sm animate-scale-in"
@@ -41,9 +46,9 @@ export function PageHero({
             {subtitle}
           </p>
           
-          {actions && (
+          {finalActions && (
             <div className="mt-6 flex flex-wrap items-center gap-3">
-              {actions}
+              {finalActions}
             </div>
           )}
         </div>

@@ -4,26 +4,32 @@ import { Card } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
 
 export interface StatCardProps {
-  label: string;
+  label?: string;
+  title?: string;
   value: string;
   delta?: number;
   deltaSuffix?: string;
   footnote?: string;
+  description?: string;
   icon: LucideIcon;
-  accent: string;
+  accent?: string;
   spark?: number[];
 }
 
 export function StatCard({
   label,
+  title,
   value,
   delta,
   deltaSuffix = 'vs last 7 days',
   footnote,
+  description,
   icon: Icon,
-  accent,
+  accent = '#2a7553',
   spark,
 }: StatCardProps) {
+  const displayLabel = label || title || '';
+  const displayFootnote = footnote || description;
   const up = (delta ?? 0) >= 0;
   const hasDelta = delta !== undefined && delta !== null;
 
@@ -59,7 +65,7 @@ export function StatCard({
       {/* Top row: label + icon */}
       <div className="flex items-start justify-between">
         <span className="text-[0.65rem] font-semibold uppercase tracking-widest text-ink-400">
-          {label}
+          {displayLabel}
         </span>
 
         {/* Icon box with glow */}
@@ -107,8 +113,8 @@ export function StatCard({
       )}
 
       {/* Footnote */}
-      {footnote && (
-        <p className="mt-1 text-xs text-ink-400">{footnote}</p>
+      {displayFootnote && (
+        <p className="mt-1 text-xs text-ink-400">{displayFootnote}</p>
       )}
 
       {/* Sparkline: full-width, flush to bottom */}

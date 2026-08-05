@@ -8,6 +8,7 @@ type Variant =
   | "success"
   | "warning"
   | "danger"
+  | "error"
   | "info"
   | "purple";
 
@@ -16,13 +17,14 @@ type Size = "sm" | "md" | "lg";
 // ─── Variant styles ───────────────────────────────────────────────────────────
 
 const variantStyles: Record<Variant, string> = {
-  default: "bg-slate-100 text-slate-700",
-  brand:   "bg-brand-50 text-brand-700 border border-brand-100",
-  success: "bg-emerald-50 text-emerald-700 border border-emerald-100",
-  warning: "bg-amber-50 text-amber-700 border border-amber-100",
-  danger:  "bg-rose-50 text-rose-700 border border-rose-100",
-  info:    "bg-sky-50 text-sky-700 border border-sky-100",
-  purple:  "bg-purple-50 text-purple-700 border border-purple-100",
+  default: "bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300",
+  brand:   "bg-brand-50 text-brand-700 border border-brand-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800",
+  success: "bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800",
+  warning: "bg-amber-50 text-amber-700 border border-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800",
+  danger:  "bg-rose-50 text-rose-700 border border-rose-100 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800",
+  error:   "bg-rose-50 text-rose-700 border border-rose-100 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800",
+  info:    "bg-sky-50 text-sky-700 border border-sky-100 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800",
+  purple:  "bg-purple-50 text-purple-700 border border-purple-100 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800",
 };
 
 // ─── Dot colors (matched to each variant) ────────────────────────────────────
@@ -33,6 +35,7 @@ const dotStyles: Record<Variant, string> = {
   success: "bg-emerald-500",
   warning: "bg-amber-500",
   danger:  "bg-rose-500",
+  error:   "bg-rose-500",
   info:    "bg-sky-500",
   purple:  "bg-purple-500",
 };
@@ -67,6 +70,7 @@ const TONE_MAP: Record<string, Variant> = {
   warning: "warning",
   rose: "danger",
   danger: "danger",
+  error: "error",
   slate: "default",
   default: "default",
   blue: "info",

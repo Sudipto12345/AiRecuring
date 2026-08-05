@@ -5,10 +5,12 @@ import React from "react";
 interface SkeletonTableProps {
   rows?: number;
   cols?: number;
+  columns?: number;
   showAvatar?: boolean;
 }
 
-export function SkeletonTable({ rows = 5, cols = 4, showAvatar = false }: SkeletonTableProps) {
+export function SkeletonTable({ rows = 5, cols, columns = 4, showAvatar = false }: SkeletonTableProps) {
+  const actualCols = cols || columns;
   // Generate slightly random widths for columns to make it look organic
   const getColWidth = (colIdx: number) => {
     if (colIdx === 0 && showAvatar) return "w-[200px]"; // Needs more space if it has an avatar
@@ -21,7 +23,7 @@ export function SkeletonTable({ rows = 5, cols = 4, showAvatar = false }: Skelet
     <div className="w-full overflow-hidden rounded-xl border border-line bg-white dark:border-zinc-800 dark:bg-zinc-900 shadow-sm animate-fade-slide-up">
       {/* Header */}
       <div className="flex w-full items-center gap-4 border-b border-line dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/50 px-4 py-3">
-        {Array.from({ length: cols }).map((_, i) => (
+        {Array.from({ length: actualCols }).map((_, i) => (
           <div key={`th-${i}`} className={`h-4 skeleton ${getColWidth(i)}`} />
         ))}
       </div>
@@ -43,7 +45,7 @@ export function SkeletonTable({ rows = 5, cols = 4, showAvatar = false }: Skelet
               </div>
             )}
             
-            {Array.from({ length: showAvatar ? cols - 1 : cols }).map((_, c) => {
+            {Array.from({ length: showAvatar ? actualCols - 1 : actualCols }).map((_, c) => {
               // Start offset if avatar is shown
               const idx = showAvatar ? c + 1 : c;
               return (

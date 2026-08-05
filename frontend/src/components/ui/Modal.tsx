@@ -4,18 +4,21 @@ import { X } from "lucide-react";
 
 export function Modal({
   open,
+  isOpen,
   onClose,
   title,
   children,
   size = "max-w-lg",
 }: {
-  open: boolean;
+  open?: boolean;
+  isOpen?: boolean;
   onClose: () => void;
   title: string;
   children: React.ReactNode;
   size?: string;
 }) {
-  if (!open) return null;
+  const isVisible = open !== undefined ? open : isOpen;
+  if (!isVisible) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-8">
       <div className="fixed inset-0 bg-ink-900/40 backdrop-blur-sm" onClick={onClose} />

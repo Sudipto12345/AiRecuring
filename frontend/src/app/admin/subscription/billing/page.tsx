@@ -56,7 +56,7 @@ export default function BillingPage() {
         <StatWidget label="MRR" value={`$${stats.mrr.toLocaleString()}`} icon={TrendingUp} tone="emerald" />
         <StatWidget label="ARR" value={`$${stats.arr.toLocaleString()}`} icon={DollarSign} tone="accent" />
         <StatWidget label="Total Revenue" value={`$${stats.totalRevenue.toLocaleString()}`} icon={Wallet} tone="sky" />
-        <StatWidget label="Active Subscriptions" value={stats.activeSubscriptions.toString()} icon={Users} tone="indigo" />
+        <StatWidget label="Active Subscriptions" value={stats.activeSubscriptions.toString()} icon={Users} tone="accent" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

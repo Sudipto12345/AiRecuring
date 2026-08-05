@@ -17,13 +17,15 @@ interface EmptyStateProps {
   title: string;
   description: string;
   action?: ReactNode;
+  icon?: any;
 }
 
 export function EmptyState({ 
   lottieUrl = LOTTIE_URLS.EMPTY_BOX, 
   title, 
   description, 
-  action 
+  action,
+  icon: Icon,
 }: EmptyStateProps) {
   const [mounted, setMounted] = useState(false);
 
@@ -33,7 +35,11 @@ export function EmptyState({
 
   return (
     <div className="flex w-full flex-col items-center justify-center py-12 px-4 text-center animate-fade-slide-up">
-      {mounted && (
+      {Icon ? (
+        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
+          <Icon className="h-8 w-8" />
+        </div>
+      ) : mounted ? (
         <div className="mb-6 h-48 w-48 opacity-90">
           <Player
             autoplay
@@ -42,7 +48,7 @@ export function EmptyState({
             style={{ height: '100%', width: '100%' }}
           />
         </div>
-      )}
+      ) : null}
       
       <h3 className="font-display mb-2 text-xl font-semibold text-ink-900 dark:text-white">
         {title}
