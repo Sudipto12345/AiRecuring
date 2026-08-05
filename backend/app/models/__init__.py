@@ -1,5 +1,5 @@
-from app.models.audit import AuditLog
-from app.models.billing import Coupon, Invoice, SubscriptionRenewal
+from app.models.audit_log import AuditLog
+from app.models.billing import Coupon, SubscriptionRenewal
 from app.models.candidate import Candidate
 from app.models.company import Company
 from app.models.credit import CreditAccount, CreditTxn
@@ -16,6 +16,8 @@ from app.models.subscription import Subscription
 from app.models.user import User
 from app.models.ai import PromptTemplate
 from app.models.session import LoginSession
+from app.models.invoice import Invoice
+from app.models.platform_config import PlatformConfig
 
 document_models = [
     AuditLog,
@@ -41,4 +43,5 @@ document_models = [
     SubscriptionRenewal,
     SupportStaff,
     User,
+    PlatformConfig,
 ]

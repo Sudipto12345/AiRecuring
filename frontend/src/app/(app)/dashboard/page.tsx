@@ -25,6 +25,7 @@ import {
   YAxis,
 } from "recharts";
 
+import { PageHero } from "@/components/ui/PageHero";
 import { PipelineFunnel } from "@/components/dashboard/PipelineFunnel";
 import { Donut } from "@/components/charts/Donut";
 import { Badge } from "@/components/ui/Badge";
@@ -174,18 +175,27 @@ export default function DashboardPage() {
     ["Tab Switch", monitoring?.reports ? 1 : 0],
   ] as const;
 
+  const currentHour = new Date().getHours();
+  let greeting = "Good evening";
+  if (currentHour < 12) greeting = "Good morning";
+  else if (currentHour < 18) greeting = "Good afternoon";
+
+  const planName = session?.subscription?.plan ? session.subscription.plan.charAt(0).toUpperCase() + session.subscription.plan.slice(1) : "Pro";
+
   return (
     <div className="space-y-5 p-4 lg:p-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-ink-900">Welcome back, {firstName} 👋</h1>
-          <p className="mt-1 text-sm text-ink-500">Here&apos;s what&apos;s happening with your recruitment pipeline today.</p>
-        </div>
-        <div className="inline-flex items-center gap-2 rounded-xl border border-line bg-white px-3 py-2 text-sm text-ink-600">
-          <CalendarRange className="h-4 w-4 text-brand-500" />
-          {dateRangeLabel()}
-        </div>
-      </div>
+      <PageHero 
+        title={`Welcome back, ${firstName} 👋`}
+        subtitle={`${greeting}! Here's what's happening with your recruitment pipeline today.`}
+        image="/images/dashboard/empty-state.png"
+        badge={`${planName} Plan`}
+        actions={
+          <div className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white backdrop-blur-md">
+            <CalendarRange className="h-4 w-4 text-white" />
+            {dateRangeLabel()}
+          </div>
+        }
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((s) => (

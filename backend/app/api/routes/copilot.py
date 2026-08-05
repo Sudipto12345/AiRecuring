@@ -89,12 +89,15 @@ async def copilot(payload: CopilotRequest, user: User = Depends(company_user)):
     can_use_llm = llm_available() and acc.balance > 0
 
     if can_use_llm:
+        from app.core.token_budget import apply_budget
+
         context = (
             f"Workspace pipeline context — open_jobs={stats['open_jobs']}, candidates={stats['candidates']}, "
             f"shortlisted={stats['shortlisted']}, interviews={stats['interviews']}, hired={stats['hired']}.\n\n"
         )
         prompt = context + f"[action={payload.action}]\n{payload.message}"
-        result = await llm_chat(SYSTEM, prompt, user.company_id, reason="Copilot", meta={"action": payload.action})
+        body = apply_budget({"max_tokens": 1000, "prompt": prompt})
+        result = await llm_chat(SYSTEM, body["prompt"], user.company_id, reason="Copilot", meta={"action": payload.action})
         if result is not None:
             reply, tokens = result
             return CopilotResponse(reply=reply, used_llm=True, tokens=tokens)

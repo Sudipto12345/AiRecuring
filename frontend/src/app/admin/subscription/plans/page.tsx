@@ -14,6 +14,107 @@ const MODULES: { key: ModuleKey; label: string }[] = [
   { key: "interviewFace", label: "Interview & Face AI" },
 ];
 
+function StripeSettingsModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClose: () => void; onSave: () => void }) {
+  const [publishableKey, setPublishableKey] = useState("");
+  const [secretKey, setSecretKey] = useState("");
+  const [webhookSecret, setWebhookSecret] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [testResult, setTestResult] = useState<{success: boolean; message: string} | null>(null);
+
+  if (!isOpen) return null;
+
+  const handleSave = async () => {
+    setBusy(true);
+    try {
+      await api("/admin/settings/stripe", {
+        method: "PUT",
+        body: {
+          publishable_key: publishableKey,
+          secret_key: secretKey,
+          webhook_secret: webhookSecret,
+        }
+      });
+      onSave();
+      onClose();
+    } catch (err) {
+      alert("Failed to save Stripe settings");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleTest = async () => {
+    setBusy(true);
+    try {
+      const res = await api<{success: boolean; message: string}>("/admin/settings/stripe/test", { method: "POST" });
+      setTestResult(res);
+    } catch (err) {
+      setTestResult({ success: false, message: "Connection failed" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl z-10 border border-gray-200">
+        <h3 className="mb-4 text-lg font-semibold text-gray-900">Stripe Configuration</h3>
+        <div className="space-y-4">
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-gray-700">Publishable Key</span>
+            <input 
+              value={publishableKey} 
+              onChange={(e) => setPublishableKey(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" 
+              placeholder="pk_test_..."
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-gray-700">Secret Key</span>
+            <input 
+              type="password"
+              value={secretKey} 
+              onChange={(e) => setSecretKey(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" 
+              placeholder="sk_test_..."
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-gray-700">Webhook Secret</span>
+            <input 
+              value={webhookSecret} 
+              onChange={(e) => setWebhookSecret(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" 
+              placeholder="whsec_..."
+            />
+          </label>
+          
+          {testResult && (
+            <div className={`p-3 rounded-lg text-sm ${testResult.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+              {testResult.message}
+            </div>
+          )}
+
+          <div className="mt-6 flex justify-between gap-3">
+            <button onClick={handleTest} disabled={busy} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+              Test Connection
+            </button>
+            <div className="flex gap-2">
+              <button onClick={onClose} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                Cancel
+              </button>
+              <button onClick={handleSave} disabled={busy} className="gradient-brand rounded-lg px-4 py-2 text-sm font-medium text-white hover:opacity-90">
+                {busy ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const NUMERIC_LIMITS = ["jobs", "cvUploadsPerMonth", "seats", "aiCredits", "storageGb", "videoUploads", "interviewMinutes"];
 const BOOL_LIMITS = ["questionBank", "apiAccess", "whiteLabel", "customDomain", "integrations", "prioritySupport"];
 
@@ -39,10 +140,21 @@ export default function PlansPage() {
   const [plans, setPlans] = useState<AdminPlan[]>([]);
   const [editing, setEditing] = useState<AdminPlan | null>(null);
   const [creating, setCreating] = useState(false);
+  const [stripeConfigOpen, setStripeConfigOpen] = useState(false);
+  const [stripeStatus, setStripeStatus] = useState<{ mode: string, publishable: string, secret: string, connected: boolean } | null>(null);
   const [confirmState, setConfirmState] = useState<{ open: boolean; title: string; message: string; onConfirm: () => void }>({ open: false, title: "", message: "", onConfirm: () => {} });
 
   const load = useCallback(async () => {
-    setPlans(await api<AdminPlan[]>("/admin/plan-catalog"));
+    try {
+      const [plansData, stripeData] = await Promise.all([
+        api<AdminPlan[]>("/admin/plan-catalog"),
+        api<any>("/admin/settings/stripe").catch(() => null)
+      ]);
+      setPlans(plansData);
+      if (stripeData) setStripeStatus(stripeData);
+    } catch (e) {
+      console.error(e);
+    }
   }, []);
 
   useEffect(() => {
@@ -77,6 +189,46 @@ export default function PlansPage() {
             <Plus className="h-4 w-4" /> New Plan
           </button>
         }
+      />
+
+      <div className="a-card p-5 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold a-text">Stripe Configuration</h3>
+            <p className="text-sm a-faint">Manage payment gateway integration</p>
+          </div>
+          <button onClick={() => setStripeConfigOpen(true)} className="flex h-8 items-center gap-1.5 rounded-lg border border-gray-300 px-3 text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <Pencil className="h-4 w-4" /> Edit Settings
+          </button>
+        </div>
+        
+        <div className="flex items-center gap-6 mt-4 p-4 rounded-xl bg-[var(--color-bg-alt)] border border-[var(--color-border)]">
+          <div>
+            <span className="text-xs font-medium uppercase tracking-wider text-gray-500">Status</span>
+            <div className="mt-1 flex items-center gap-2">
+              <div className={`h-2.5 w-2.5 rounded-full ${stripeStatus?.connected ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+              <span className="text-sm font-medium">{stripeStatus?.connected ? 'Connected' : 'Not Configured'}</span>
+            </div>
+          </div>
+          <div>
+            <span className="text-xs font-medium uppercase tracking-wider text-gray-500">Mode</span>
+            <div className="mt-1 text-sm font-medium text-gray-900">{stripeStatus?.mode || '—'}</div>
+          </div>
+          <div>
+            <span className="text-xs font-medium uppercase tracking-wider text-gray-500">Publishable Key</span>
+            <div className="mt-1 text-sm font-medium text-gray-900 font-mono">{stripeStatus?.publishable ? `${stripeStatus.publishable.slice(0,8)}...` : '—'}</div>
+          </div>
+          <div>
+            <span className="text-xs font-medium uppercase tracking-wider text-gray-500">Secret Key</span>
+            <div className="mt-1 text-sm font-medium text-gray-900 font-mono">{stripeStatus?.secret ? `sk_${stripeStatus.mode === 'test' ? 'test' : 'live'}_••••••••` : '—'}</div>
+          </div>
+        </div>
+      </div>
+      
+      <StripeSettingsModal 
+        isOpen={stripeConfigOpen} 
+        onClose={() => setStripeConfigOpen(false)} 
+        onSave={load} 
       />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">

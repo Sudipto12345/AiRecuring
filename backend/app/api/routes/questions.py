@@ -95,11 +95,14 @@ class AIGenerateRequest(BaseModel):
 @router.post("/ai_generate", response_model=list[QuestionOut], status_code=status.HTTP_201_CREATED)
 async def ai_generate_questions(payload: AIGenerateRequest, user: User = Depends(company_user)):
     from app.services.llm import llm_chat
+    from app.core.token_budget import apply_budget
+
     prompt = (
         f"Generate {payload.num_questions} multiple-choice questions for the topic '{payload.topic}' with difficulty '{payload.difficulty}'. "
         "Return ONLY a valid JSON list of objects with keys: text, options (array of 4 strings), correct_index (0-3), category, difficulty."
     )
-    res_text, _ = await llm_chat(prompt)
+    body = apply_budget({"max_tokens": 1500, "prompt": prompt})
+    res_text, _ = await llm_chat(body["prompt"])
     created = []
     try:
         import json

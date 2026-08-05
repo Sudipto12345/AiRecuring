@@ -60,3 +60,19 @@ def require_module(module_key: str):
         return sub
 
     return checker
+
+
+def sanitize_mongo_input(data: dict) -> dict:
+    if not isinstance(data, dict):
+        return data
+    sanitized = {}
+    for k, v in data.items():
+        if str(k).startswith("$"):
+            continue
+        if isinstance(v, dict):
+            sanitized[k] = sanitize_mongo_input(v)
+        elif isinstance(v, list):
+            sanitized[k] = [sanitize_mongo_input(i) if isinstance(i, dict) else i for i in v]
+        else:
+            sanitized[k] = v
+    return sanitized

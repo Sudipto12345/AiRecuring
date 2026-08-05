@@ -4,6 +4,8 @@ import re
 from typing import Any, Dict, Optional
 from app.core.config import settings
 
+from app.core.token_budget import apply_budget
+
 logger = logging.getLogger("air.bedrock")
 
 try:
@@ -42,11 +44,12 @@ class BedrockService:
     def _invoke_text(self, prompt: str, max_tokens: int = 700) -> str:
         if self._client is None:
             raise RuntimeError("AWS Bedrock client is not initialized")
-        body = json.dumps({
+        body_dict = apply_budget({
             "anthropic_version": "bedrock-2023-05-31",
             "max_tokens": max_tokens,
             "messages": [{"role": "user", "content": prompt}],
         })
+        body = json.dumps(body_dict)
         try:
             response = self._client.invoke_model(
                 body=body,

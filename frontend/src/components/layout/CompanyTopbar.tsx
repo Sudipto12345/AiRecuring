@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { CreditBadge } from "@/components/layout/CreditBadge";
+import { NotificationBell } from "@/components/ui/NotificationBell";
 import { ThemeToggle } from "@/components/admin/ThemeToggle";
 import { useCommandPalette } from "@/components/admin/CommandPalette";
 import { Avatar } from "@/components/ui/Avatar";
@@ -82,14 +83,7 @@ export function CompanyTopbar({ onMenu }: { onMenu: () => void }) {
           <CheckSquare className="h-[18px] w-[18px]" />
         </button>
 
-        <button
-          onClick={() => router.push("/communication/notifications")}
-          className="a-hover relative flex h-10 w-10 items-center justify-center rounded-xl border a-border a-muted"
-          title="Notifications"
-        >
-          <Bell className="h-[18px] w-[18px]" />
-          <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-slate-900" />
-        </button>
+        <NotificationBell />
 
         <button
           className="a-hover hidden h-10 w-10 items-center justify-center rounded-xl border a-border a-muted xl:flex"

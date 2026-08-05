@@ -3,7 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.api.deps import current_user
 from app.core.config import settings
 from app.core.plans import DEFAULT_PLAN
-from app.core.security import create_access_token, hash_password, verify_password
+from app.core.security import create_access_token, hash_password, verify_password, create_refresh_token, decode_refresh_token
+from fastapi import Response
 from app.services.credits import grant
 from app.models.company import Company
 from app.models.subscription import Subscription
@@ -30,7 +31,7 @@ async def _unique_slug(name: str) -> str:
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-async def register(payload: RegisterRequest):
+async def register(payload: RegisterRequest, response: Response):
     if await User.find_one(User.email == payload.email):
         raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
 
@@ -54,11 +55,13 @@ async def register(payload: RegisterRequest):
         await grant(str(company.id), settings.new_company_credits, "Welcome credits")
 
     token = create_access_token(str(admin.id), {"role": admin.role, "cid": admin.company_id})
+    refresh_token = create_refresh_token(str(admin.id), {"role": admin.role, "cid": admin.company_id})
+    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, max_age=30*24*60*60, samesite="lax", secure=True)
     return TokenResponse(access_token=token)
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(payload: LoginRequest):
+async def login(payload: LoginRequest, response: Response):
     user = await User.find_one(User.email == payload.email)
     if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid email or password")
@@ -85,9 +88,40 @@ async def login(payload: LoginRequest):
                 )
 
     token = create_access_token(str(user.id), {"role": user.role, "cid": user.company_id})
+    refresh_token = create_refresh_token(str(user.id), {"role": user.role, "cid": user.company_id})
+    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, max_age=30*24*60*60, samesite="lax", secure=True)
     return TokenResponse(access_token=token)
 
 
 @router.get("/me", response_model=SessionOut)
 async def me(user: User = Depends(current_user)):
     return await build_session(user)
+
+
+from fastapi import Request
+
+@router.post("/refresh", response_model=TokenResponse)
+async def refresh(request: Request, response: Response):
+    token = request.cookies.get("refresh_token")
+    if not token:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Refresh token missing")
+    
+    payload = decode_refresh_token(token)
+    if not payload:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid refresh token")
+        
+    user_id = payload.get("sub")
+    role = payload.get("role")
+    cid = payload.get("cid")
+    
+    new_access = create_access_token(user_id, {"role": role, "cid": cid})
+    new_refresh = create_refresh_token(user_id, {"role": role, "cid": cid})
+    
+    response.set_cookie(key="refresh_token", value=new_refresh, httponly=True, max_age=30*24*60*60, samesite="lax", secure=True)
+    return TokenResponse(access_token=new_access)
+
+
+@router.post("/logout")
+async def logout(response: Response):
+    response.delete_cookie(key="refresh_token", httponly=True, samesite="lax", secure=True)
+    return {"detail": "Logged out"}

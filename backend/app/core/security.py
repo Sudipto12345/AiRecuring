@@ -39,3 +39,26 @@ def decode_token(token: str) -> dict | None:
         return jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_alg])
     except JWTError:
         return None
+
+
+def create_refresh_token(subject: str, extra: dict | None = None) -> str:
+    now = datetime.now(timezone.utc)
+    payload = {
+        "sub": subject,
+        "iat": now,
+        "exp": now + timedelta(days=30),
+        "type": "refresh"
+    }
+    if extra:
+        payload.update(extra)
+    return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_alg)
+
+
+def decode_refresh_token(token: str) -> dict | None:
+    try:
+        payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_alg])
+        if payload.get("type") != "refresh":
+            return None
+        return payload
+    except JWTError:
+        return None

@@ -38,6 +38,44 @@
   --shadow-card: 0 4px 25px -4px rgba(27, 58, 45, 0.06), 0 2px 6px -1px rgba(27, 58, 45, 0.03);
   --shadow-pop: 0 20px 45px -10px rgba(15, 38, 29, 0.18);
   --shadow-focus: 0 0 0 4px rgba(58, 145, 106, 0.18);
+
+  /* Fonts */
+  --font-display: 'Outfit', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Extended Sage Palette */
+  --color-forest-950: #0d1f18;
+  --color-forest-900: #122b22;
+  --color-sage-800: #1a4a35;
+  --color-sage-700: #215e43;
+  --color-sage-600: #2a7553;
+  --color-sage-500: #359162;
+  --color-sage-400: #4caf82;
+  --color-sage-300: #7ec9a3;
+  --color-sage-200: #b3e0c8;
+  --color-sage-100: #e8f5ef;
+  --color-sage-50:  #f4faf7;
+  --color-gold-600: #b8892e;
+  --color-gold-500: #d4a853;
+  --color-gold-400: #e8c07a;
+
+  /* Motion */
+  --ease-spring: cubic-bezier(0.34,1.56,0.64,1);
+  --ease-smooth: cubic-bezier(0.16,1,0.3,1);
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 400ms;
+  --duration-slower: 600ms;
+
+  /* Glassmorphism */
+  --glass-bg: rgba(255,255,255,0.07);
+  --glass-border: rgba(255,255,255,0.15);
+  --glass-backdrop: blur(12px);
+
+  /* Shadows */
+  --shadow-elevated: 0 4px 24px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08);
+  --shadow-popup: 0 8px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.1);
 }
 
 * {
@@ -106,6 +144,52 @@ body {
   50% { transform: translateY(-6px); }
 }
 .animate-float { animation: floatGentle 4s ease-in-out infinite; }
+
+/* Global animations */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes shimmer {
+  from { background-position: -200% center; }
+  to   { background-position: 200% center; }
+}
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+.animate-fade-slide-up   { animation: fadeSlideUp var(--duration-base) var(--ease-smooth) both; }
+.animate-fade-slide-in   { animation: fadeSlideIn var(--duration-base) var(--ease-smooth) both; }
+.animate-scale-in        { animation: scaleIn var(--duration-base) var(--ease-spring) both; }
+.animate-pulse-soft      { animation: pulse-soft 2s ease-in-out infinite; }
+
+/* Stagger Utilities */
+.stagger-1 { animation-delay: 50ms; }
+.stagger-2 { animation-delay: 100ms; }
+.stagger-3 { animation-delay: 150ms; }
+.stagger-4 { animation-delay: 200ms; }
+.stagger-5 { animation-delay: 250ms; }
+.stagger-6 { animation-delay: 300ms; }
+
+/* Skeleton Shimmer Utility */
+.skeleton {
+  background: linear-gradient(90deg, var(--color-sage-100) 25%, var(--color-sage-50) 50%, var(--color-sage-100) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}
 
 /* Unified Calm Sage Green Design System — All Panels */
 :root, [data-theme], [data-theme="light"], [data-theme="dark"] {

@@ -15,6 +15,7 @@ from app.schemas.candidates import (
     StageUpdate,
     UploadResult,
 )
+from app.api.routes.notifications import notify_company
 from app.services.cv_scorer import score_candidate
 from app.services.credits import ensure_balance
 from app.services.embeddings import index_candidate, search_candidates
@@ -160,6 +161,8 @@ async def upload_cvs(
     await job.save()
 
     created.sort(key=lambda c: c.overall_score, reverse=True)
+    if created:
+        await notify_company(user.company_id, "candidate.updated", {"count": len(created), "job_id": job_id})
     return UploadResult(created=len(created), candidates=[candidate_out(c) for c in created])
 
 
@@ -230,5 +233,6 @@ async def update_stage(candidate_id: str, payload: StageUpdate, user: User = Dep
     c.stage = payload.stage
     c.last_activity = datetime.now(timezone.utc)
     await c.save()
+    await notify_company(user.company_id, "candidate.updated", {"candidate_id": candidate_id, "stage": payload.stage})
     return candidate_out(c)
 

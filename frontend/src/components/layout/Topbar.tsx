@@ -2,18 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Bell,
-  ChevronDown,
-  LogOut,
-  Menu,
-  Search,
-  Settings,
-  User,
-  Zap,
-} from "lucide-react";
+import { Search, Menu, HelpCircle, Bell } from "lucide-react";
 
-import { Avatar } from "@/components/ui/Avatar";
+import { useTheme } from "@/lib/theme";
+import { ProfileDropdown } from "@/components/ui/ProfileDropdown";
+import { NotificationBell } from "@/components/ui/NotificationBell";
 import { CreditBadge } from "@/components/layout/CreditBadge";
 import { useAuth } from "@/lib/auth";
 import { PLAN_LABELS } from "@/lib/nav";
@@ -114,8 +107,6 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
   const plan = session?.subscription?.plan;
   const ps = planStyle(plan);
   const companyName = session?.company?.name ?? "Platform";
-  const initials = companyName.slice(0, 2).toUpperCase();
-  const gradient = avatarGradient(companyName);
 
   return (
     <header
@@ -218,174 +209,8 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
         {/* Credit badge */}
         <CreditBadge />
 
-        {/* Notification bell */}
-        <button
-          aria-label="Notifications"
-          className={[
-            "relative flex h-8 w-8 items-center justify-center rounded-lg",
-            "text-slate-500 dark:text-slate-400",
-            "hover:bg-slate-100 dark:hover:bg-white/[0.06]",
-            "transition-colors duration-150",
-          ].join(" ")}
-        >
-          <Bell className="h-[18px] w-[18px]" />
-          {/* Animated pulse unread dot */}
-          <span className="absolute right-1.5 top-1.5 flex h-2 w-2" aria-hidden>
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-950" />
-          </span>
-        </button>
-
-        {/* User / company dropdown */}
-        <div ref={ref} className="relative">
-          <button
-            onClick={() => setMenuOpen((v) => !v)}
-            aria-expanded={menuOpen}
-            aria-haspopup="true"
-            className={[
-              "flex items-center gap-2 rounded-xl border py-1 pl-1.5 pr-2.5",
-              "transition-all duration-150",
-              menuOpen
-                ? "border-indigo-300 bg-indigo-50 dark:border-indigo-700 dark:bg-indigo-900/30"
-                : "border-slate-200 bg-white hover:bg-slate-50 dark:border-white/[0.08] dark:bg-transparent dark:hover:bg-white/[0.04]",
-            ].join(" ")}
-          >
-            {/* Gradient initials avatar */}
-            <span
-              className={[
-                "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg",
-                "bg-gradient-to-br text-[11px] font-bold text-white",
-                gradient,
-              ].join(" ")}
-              aria-hidden
-            >
-              {initials}
-            </span>
-
-            {/* Name + plan (hidden on xs) */}
-            <div className="hidden text-left leading-tight sm:block">
-              <p className="max-w-[120px] truncate text-[12px] font-semibold text-slate-800 dark:text-slate-100">
-                {companyName}
-              </p>
-              <p className="text-[10px] text-slate-400 dark:text-slate-500">
-                {plan ? `${PLAN_LABELS[plan] ?? plan} plan` : "Organization"}
-              </p>
-            </div>
-
-            <ChevronDown
-              className={[
-                "h-3.5 w-3.5 text-slate-400 transition-transform duration-200",
-                menuOpen ? "rotate-180" : "rotate-0",
-              ].join(" ")}
-            />
-          </button>
-
-          {/* Dropdown */}
-          <div
-            className={[
-              "absolute right-0 mt-2 w-60 origin-top-right overflow-hidden",
-              "rounded-xl border border-slate-200/80 dark:border-white/[0.08]",
-              "bg-white dark:bg-slate-900",
-              "shadow-xl shadow-slate-200/60 dark:shadow-black/40",
-              "transition-all duration-200",
-              menuOpen
-                ? "opacity-100 scale-100 translate-y-0 pointer-events-auto"
-                : "opacity-0 scale-95 -translate-y-1 pointer-events-none",
-            ].join(" ")}
-          >
-            {/* User info header */}
-            <div className="flex items-center gap-3 border-b border-slate-100 dark:border-white/[0.06] p-3">
-              <Avatar
-                name={session?.user.name ?? "User"}
-                src={session?.user.avatar_url}
-                size="sm"
-              />
-              <div className="min-w-0">
-                <p className="truncate text-[13px] font-semibold text-slate-800 dark:text-slate-100">
-                  {session?.user.name ?? "User"}
-                </p>
-                <p className="truncate text-[11px] text-slate-400 dark:text-slate-500">
-                  {session?.user.email ?? ""}
-                </p>
-              </div>
-            </div>
-
-            {/* Nav items */}
-            <div className="p-1">
-              <button
-                onClick={() => {
-                  setMenuOpen(false);
-                  router.push("/settings/profile");
-                }}
-                className={[
-                  "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px]",
-                  "text-slate-700 dark:text-slate-300",
-                  "hover:bg-slate-50 dark:hover:bg-white/[0.06]",
-                  "transition-colors duration-100",
-                ].join(" ")}
-              >
-                <User className="h-4 w-4 text-slate-400 dark:text-slate-500" />
-                Profile
-              </button>
-
-              <button
-                onClick={() => {
-                  setMenuOpen(false);
-                  router.push("/settings");
-                }}
-                className={[
-                  "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px]",
-                  "text-slate-700 dark:text-slate-300",
-                  "hover:bg-slate-50 dark:hover:bg-white/[0.06]",
-                  "transition-colors duration-100",
-                ].join(" ")}
-              >
-                <Settings className="h-4 w-4 text-slate-400 dark:text-slate-500" />
-                Settings
-              </button>
-
-              {plan === "free" && (
-                <button
-                  onClick={() => {
-                    setMenuOpen(false);
-                    router.push("/settings/billing");
-                  }}
-                  className={[
-                    "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px]",
-                    "text-violet-600 dark:text-violet-400",
-                    "hover:bg-violet-50 dark:hover:bg-violet-900/20",
-                    "transition-colors duration-100",
-                  ].join(" ")}
-                >
-                  <Zap className="h-4 w-4" />
-                  Upgrade to Pro
-                </button>
-              )}
-            </div>
-
-            {/* Divider */}
-            <div className="h-px bg-slate-100 dark:bg-white/[0.06]" />
-
-            {/* Sign out */}
-            <div className="p-1">
-              <button
-                onClick={() => {
-                  logout();
-                  router.push("/login");
-                }}
-                className={[
-                  "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px]",
-                  "text-rose-600 dark:text-rose-400",
-                  "hover:bg-rose-50 dark:hover:bg-rose-900/20",
-                  "transition-colors duration-100",
-                ].join(" ")}
-              >
-                <LogOut className="h-4 w-4" />
-                Sign out
-              </button>
-            </div>
-          </div>
-        </div>
+        <NotificationBell />
+        <ProfileDropdown />
       </div>
     </header>
   );

@@ -1,12 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import { Sparkles, Loader2, Check } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
 import { Input, Label, Select, Textarea } from "@/components/ui/Field";
 import { Modal } from "@/components/ui/Modal";
 import { api, ApiError } from "@/lib/api";
 import type { Job } from "@/lib/types";
+
+interface ParsedResult {
+  skills: string[];
+  experience_min_years: number | null;
+  experience_max_years: number | null;
+  salary_min: number | null;
+  salary_max: number | null;
+  currency: string;
+}
 
 export function JobFormModal({
   open,
@@ -32,10 +42,39 @@ export function JobFormModal({
     status: "active",
   });
   const [busy, setBusy] = useState(false);
+  const [parsing, setParsing] = useState(false);
+  const [parsedResult, setParsedResult] = useState<ParsedResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  async function handleAutoExtract() {
+    if (!form.description.trim()) return;
+    setParsing(true);
+    setError(null);
+    try {
+      const res = await api<ParsedResult>("/jobs/parse-description", {
+        method: "POST",
+        body: { description: form.description },
+      });
+      setParsedResult(res);
+
+      // Auto fill form fields
+      setForm((f) => ({
+        ...f,
+        skills: res.skills.length > 0 ? res.skills.join(", ") : f.skills,
+        experience_min: res.experience_min_years !== null ? res.experience_min_years : f.experience_min,
+        experience_max: res.experience_max_years !== null ? res.experience_max_years : f.experience_max,
+        salary_min: res.salary_min !== null ? String(res.salary_min) : f.salary_min,
+        salary_max: res.salary_max !== null ? String(res.salary_max) : f.salary_max,
+      }));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to parse job description");
+    } finally {
+      setParsing(false);
+    }
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -116,7 +155,44 @@ export function JobFormModal({
         </div>
         <div className="col-span-2">
           <Label>Description</Label>
-          <Textarea rows={3} value={form.description} onChange={set("description")} />
+          <Textarea rows={3} value={form.description} onChange={set("description")} placeholder="Paste job description text here..." />
+          <div className="mt-2 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={handleAutoExtract}
+              disabled={parsing || !form.description.trim()}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-600 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors"
+            >
+              {parsing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              Auto-extract skills & requirements
+            </button>
+          </div>
+
+          {/* Parsed Chips Preview */}
+          {parsedResult && (
+            <div className="mt-3 rounded-xl border border-emerald-500/20 bg-emerald-950/5 p-3 text-xs space-y-2">
+              <div className="flex items-center gap-1.5 text-emerald-600 font-semibold">
+                <Check className="h-4 w-4" /> Parsed Requirements Extracted:
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {parsedResult.skills.map((skill) => (
+                  <span key={skill} className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 font-medium text-emerald-700 dark:text-emerald-300">
+                    {skill}
+                  </span>
+                ))}
+                {parsedResult.experience_min_years !== null && (
+                  <span className="rounded-full bg-sky-500/15 border border-sky-500/30 px-2.5 py-0.5 font-medium text-sky-700 dark:text-sky-300">
+                    Exp: {parsedResult.experience_min_years}–{parsedResult.experience_max_years} yrs
+                  </span>
+                )}
+                {parsedResult.salary_min !== null && (
+                  <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 font-medium text-amber-700 dark:text-amber-300">
+                    Salary: ${parsedResult.salary_min}–${parsedResult.salary_max} {parsedResult.currency}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
         {error && <p className="col-span-2 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600">{error}</p>}
         <div className="col-span-2 flex justify-end gap-2">
@@ -127,3 +203,4 @@ export function JobFormModal({
     </Modal>
   );
 }
+

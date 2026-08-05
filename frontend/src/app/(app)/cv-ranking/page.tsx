@@ -1,12 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { FileText, Search, Send, Star, TrendingDown, TrendingUp, UploadCloud } from "lucide-react";
+import { Award, FileText, Search, Send, Sparkles, Star, TrendingDown, TrendingUp, UploadCloud } from "lucide-react";
 
 import { ExamDispatch } from "@/components/jobs/ExamDispatch";
 import { CandidateDetail } from "@/components/candidates/CandidateDrawer";
 import { UploadDialog } from "@/components/candidates/UploadDialog";
-import { PageHeader } from "@/components/layout/PageHeader";
+import { PageHero } from "@/components/ui/PageHero";
+import { SkeletonTable } from "@/components/ui/SkeletonTable";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -29,10 +31,15 @@ export default function CvRankingPage() {
   const [examDispatchOpen, setExamDispatchOpen] = useState(false);
 
   const load = useCallback(async () => {
-    const [c, j] = await Promise.all([api<Candidate[]>("/candidates?sort=score"), api<Job[]>("/jobs")]);
-    setCandidates(c);
-    setJobs(j);
-    setLoading(false);
+    try {
+      const [c, j] = await Promise.all([api<Candidate[]>("/candidates?sort=score"), api<Job[]>("/jobs")]);
+      setCandidates(c || []);
+      setJobs(j || []);
+    } catch (err) {
+      console.error("Failed to load CV ranking data", err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -43,7 +50,7 @@ export default function CvRankingPage() {
     () =>
       candidates.filter((c) => {
         if (jobFilter && c.job_id !== jobFilter) return false;
-        if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false;
+        if (search && !c.name.toLowerCase().includes(search.toLowerCase()) && !c.matched_skills?.some(s => s.toLowerCase().includes(search.toLowerCase()))) return false;
         return true;
       }),
     [candidates, jobFilter, search],
@@ -55,11 +62,11 @@ export default function CvRankingPage() {
   const low = candidates.filter((c) => c.overall_score < 60).length;
 
   const statCards = [
-    { label: "Total CVs Analyzed", value: String(candidates.length), icon: FileText, accent: "#6366f1", spark: [6, 8, 10, 12, 14, 16, 18] },
-    { label: "Avg Match Score", value: avg ? avg.toFixed(1) : "0", icon: Star, accent: "#a855f7", spark: [70, 72, 74, 73, 76, 78, 79] },
-    { label: "High Match (80%+)", value: String(high), icon: TrendingUp, accent: "#22c55e", spark: [2, 3, 4, 5, 6, 7, 8] },
-    { label: "Medium Match", value: String(mid), icon: TrendingUp, accent: "#f59e0b", spark: [3, 4, 4, 5, 5, 6, 6] },
-    { label: "Low Match (<60%)", value: String(low), icon: TrendingDown, accent: "#ef4444", spark: [1, 1, 2, 2, 2, 3, 3] },
+    { label: "Total CVs Analyzed", value: String(candidates.length), icon: FileText, accent: "#2a7553", spark: [6, 8, 10, 12, 14, 16, 18] },
+    { label: "Avg Match Score", value: avg ? avg.toFixed(1) : "0", icon: Star, accent: "#8b5cf6", spark: [70, 72, 74, 73, 76, 78, 79] },
+    { label: "High Match (80%+)", value: String(high), icon: TrendingUp, accent: "#16a34a", spark: [2, 3, 4, 5, 6, 7, 8] },
+    { label: "Medium Match", value: String(mid), icon: TrendingUp, accent: "#d97706", spark: [3, 4, 4, 5, 5, 6, 6] },
+    { label: "Low Match (<60%)", value: String(low), icon: TrendingDown, accent: "#dc2626", spark: [1, 1, 2, 2, 2, 3, 3] },
   ];
 
   const dispatchCandidates = useMemo(() => {
@@ -81,126 +88,170 @@ export default function CvRankingPage() {
     });
   };
 
+  const bgSvgPattern = "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%232a7553' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")";
+
   return (
-    <div className="space-y-5 p-4 lg:p-6">
-      <PageHeader
-        title="CV Ranking"
-        subtitle="AI ranked candidates based on resume analysis and job relevance."
+    <div className="space-y-6 p-4 lg:p-6 min-h-screen" style={{ backgroundImage: bgSvgPattern }}>
+      <PageHero
+        title="CV Ranking & AI Scoring"
+        subtitle="Intelligent resume analysis powered by semantic matching and skill taxonomy"
+        image="/images/candidates/hero.png"
+        badge="AI-Powered"
         actions={
-          <Button onClick={() => setUploadOpen(true)}>
-            <UploadCloud className="h-4 w-4" /> Upload CVs
+          <Button onClick={() => setUploadOpen(true)} className="bg-white/20 text-white hover:bg-white/30 border-white/20 backdrop-blur-md">
+            <UploadCloud className="h-4 w-4 mr-2" /> Upload CVs
           </Button>
         }
       />
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
-        {statCards.map((s) => (
-          <StatCard key={s.label} {...s} />
+        {statCards.map((s, idx) => (
+          <div key={s.label} className={`animate-fade-slide-up stagger-${(idx % 5) + 1}`}>
+            <StatCard {...s} />
+          </div>
         ))}
       </div>
 
       <div className="flex gap-5">
         <div className="min-w-0 flex-1 space-y-4">
-          <Card className="flex flex-wrap items-center gap-2 p-3">
-            <div className="relative min-w-[200px] flex-1">
+          <Card className="flex flex-wrap items-center gap-3 p-4 border border-line/80 shadow-sm bg-white/80 backdrop-blur-md">
+            <div className="relative min-w-[240px] flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search name, skills, experience…"
-                className="h-10 w-full rounded-lg border border-line bg-white pl-9 pr-3 text-sm outline-none focus:border-brand-300"
+                placeholder="Search candidate name, tech stack, or experience…"
+                className="h-10 w-full rounded-xl border border-line bg-white/90 pl-9 pr-3 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
               />
             </div>
-            <Select value={jobFilter} onChange={(e) => setJobFilter(e.target.value)} className="h-10 w-44">
-              <option value="">All Jobs</option>
+            <Select value={jobFilter} onChange={(e) => setJobFilter(e.target.value)} className="h-10 w-52 rounded-xl">
+              <option value="">All Job Positions</option>
               {jobs.map((j) => (
                 <option key={j.id} value={j.id}>{j.title}</option>
               ))}
             </Select>
           </Card>
 
-          <Card className="overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-line text-left text-[11px] uppercase tracking-wide text-ink-400">
-                    <th className="px-4 py-3 font-medium w-10">
-                      <input 
-                        type="checkbox" 
-                        className="accent-brand-600"
-                        checked={filtered.length > 0 && multiSelect.size === filtered.length}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setMultiSelect(new Set(filtered.map(c => c.id)));
-                          } else {
-                            setMultiSelect(new Set());
-                          }
-                        }}
-                      />
-                    </th>
-                    <th className="px-4 py-3 font-medium">Rank</th>
-                    <th className="px-4 py-3 font-medium">Candidate</th>
-                    <th className="px-4 py-3 font-medium">Applied For</th>
-                    <th className="px-4 py-3 font-medium">Match</th>
-                    <th className="px-4 py-3 font-medium">Key Skills</th>
-                    <th className="px-4 py-3 font-medium">Exp</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading ? (
-                    <tr><td colSpan={6} className="px-5 py-12 text-center text-ink-400">Loading…</td></tr>
-                  ) : filtered.length === 0 ? (
-                    <tr><td colSpan={6} className="px-5 py-12 text-center text-ink-400">No ranked CVs yet.</td></tr>
-                  ) : (
-                    filtered.map((c, i) => (
-                      <tr
-                        key={c.id}
-                        onClick={() => setSelected(c)}
-                        className={`cursor-pointer border-b border-line/70 last:border-0 hover:bg-brand-50/40 ${selected?.id === c.id ? "bg-brand-50/60" : ""}`}
-                      >
-                        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                          <input 
-                            type="checkbox" 
-                            checked={multiSelect.has(c.id)} 
-                            onChange={(e) => { e.stopPropagation(); toggleSelect(e as any, c.id); }} 
-                            className="accent-brand-600" 
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold ${i < 3 ? "gradient-brand text-white" : "bg-slate-100 text-ink-500"}`}>
-                            {i + 1}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <Avatar name={c.name} size="sm" />
-                            <div className="min-w-0">
-                              <p className="truncate font-medium text-ink-900">{c.name}</p>
-                              <p className="truncate text-xs text-ink-400">{c.email}</p>
+          {loading ? (
+            <SkeletonTable rows={6} cols={7} showAvatar />
+          ) : filtered.length === 0 ? (
+            <Card className="p-8">
+              <EmptyState
+                title="No Ranked Candidates Found"
+                description="We couldn't find any resumes matching your search filters. Try clearing your search query or uploading new CVs to get AI scoring."
+                action={
+                  <Button onClick={() => setUploadOpen(true)}>
+                    <UploadCloud className="h-4 w-4 mr-2" /> Upload Resumes Now
+                  </Button>
+                }
+              />
+            </Card>
+          ) : (
+            <Card className="overflow-hidden border border-line/80 shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-line bg-slate-50/70 text-left text-[11px] font-semibold uppercase tracking-wider text-ink-500">
+                      <th className="px-4 py-3.5 w-10">
+                        <input 
+                          type="checkbox" 
+                          className="accent-brand-600 rounded"
+                          checked={filtered.length > 0 && multiSelect.size === filtered.length}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setMultiSelect(new Set(filtered.map(c => c.id)));
+                            } else {
+                              setMultiSelect(new Set());
+                            }
+                          }}
+                        />
+                      </th>
+                      <th className="px-4 py-3.5">Rank</th>
+                      <th className="px-4 py-3.5">Candidate</th>
+                      <th className="px-4 py-3.5">Target Role</th>
+                      <th className="px-4 py-3.5 text-center">AI Match Ring</th>
+                      <th className="px-4 py-3.5">Top Skills</th>
+                      <th className="px-4 py-3.5">Exp</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line/60">
+                    {filtered.map((c, i) => {
+                      const isTopPerformer = i < 3 || c.overall_score >= 85;
+                      const staggerClass = `stagger-${(i % 6) + 1}`;
+                      return (
+                        <tr
+                          key={c.id}
+                          onClick={() => setSelected(c)}
+                          className={`cursor-pointer transition-colors duration-150 animate-fade-slide-up ${staggerClass} hover:bg-brand-50/50 ${selected?.id === c.id ? "bg-brand-50/80" : ""}`}
+                        >
+                          <td className="px-4 py-3.5" onClick={(e) => e.stopPropagation()}>
+                            <input 
+                              type="checkbox" 
+                              checked={multiSelect.has(c.id)} 
+                              onChange={(e) => { e.stopPropagation(); toggleSelect(e as any, c.id); }} 
+                              className="accent-brand-600 rounded" 
+                            />
+                          </td>
+                          <td className="px-4 py-3.5">
+                            <div className="flex items-center gap-1.5">
+                              <span className={`flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold ${
+                                i === 0 
+                                  ? "bg-amber-500 text-white shadow-sm ring-2 ring-amber-300" 
+                                  : i === 1 
+                                  ? "bg-slate-400 text-white shadow-sm" 
+                                  : i === 2 
+                                  ? "bg-amber-700 text-white shadow-sm" 
+                                  : "bg-slate-100 text-ink-600"
+                              }`}>
+                                {i + 1}
+                              </span>
+                              {isTopPerformer && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 border border-amber-300/60 shadow-xs" title="Top AI Match Candidate">
+                                  <Sparkles className="h-3 w-3 text-amber-600 fill-amber-500" />
+                                  Gold Match
+                                </span>
+                              )}
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-ink-600">{c.job_title}</td>
-                        <td className="px-4 py-3"><ScoreRing score={c.overall_score} size={46} stroke={4} showLabel={false} /></td>
-                        <td className="px-4 py-3">
-                          <div className="flex max-w-[200px] flex-wrap gap-1">
-                            {c.matched_skills.slice(0, 3).map((s) => <SkillChip key={s} label={s} matched />)}
-                            {c.matched_skills.length > 3 && <span className="text-xs text-ink-400">+{c.matched_skills.length - 3}</span>}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-ink-600">{c.experience_years}y</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </Card>
+                          </td>
+                          <td className="px-4 py-3.5">
+                            <div className="flex items-center gap-3">
+                              <Avatar name={c.name} size="sm" />
+                              <div className="min-w-0">
+                                <p className="truncate font-semibold text-ink-900 flex items-center gap-1.5">
+                                  {c.name}
+                                </p>
+                                <p className="truncate text-xs text-ink-400">{c.email}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3.5 text-ink-700 font-medium">{c.job_title}</td>
+                          <td className="px-4 py-3.5 text-center">
+                            <ScoreRing score={c.overall_score} size={48} stroke={4.5} showLabel={false} />
+                          </td>
+                          <td className="px-4 py-3.5">
+                            <div className="flex max-w-[220px] flex-wrap gap-1.5">
+                              {c.matched_skills.slice(0, 3).map((s) => <SkillChip key={s} label={s} matched />)}
+                              {c.matched_skills.length > 3 && (
+                                <span className="inline-flex items-center text-xs font-medium text-ink-500 bg-slate-100 px-1.5 py-0.5 rounded-md">
+                                  +{c.matched_skills.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3.5 text-ink-600 font-medium">{c.experience_years}y</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
         </div>
 
         {selected && (
-          <div className="hidden w-[380px] shrink-0 lg:block">
-            <Card className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto">
+          <div className="hidden w-[390px] shrink-0 lg:block animate-fade-slide-in">
+            <Card className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto border border-line/80 shadow-md">
               <CandidateDetail candidate={selected} onClose={() => setSelected(null)} />
             </Card>
           </div>
@@ -208,16 +259,19 @@ export default function CvRankingPage() {
       </div>
 
       {multiSelect.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 flex -translate-x-1/2 items-center gap-4 rounded-full border border-line bg-white px-6 py-3 shadow-xl">
-          <div className="text-sm font-medium text-ink-900">
-            {multiSelect.size} candidate{multiSelect.size > 1 ? "s" : ""} selected
+        <div className="fixed bottom-6 left-1/2 flex -translate-x-1/2 items-center gap-4 rounded-full border border-line bg-white/95 px-6 py-3 shadow-2xl backdrop-blur-md animate-pop z-50">
+          <div className="text-sm font-semibold text-ink-900 flex items-center gap-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-600 text-xs text-white">
+              {multiSelect.size}
+            </span>
+            candidate{multiSelect.size > 1 ? "s" : ""} selected
           </div>
           <div className="h-6 w-px bg-line" />
           <Button size="sm" onClick={() => setExamDispatchOpen(true)} disabled={!dispatchCandidates.job}>
-            <Send className="h-4 w-4" /> Send Exam
+            <Send className="h-4 w-4 mr-1.5" /> Dispatch Assessment Exam
           </Button>
-          <button onClick={() => setMultiSelect(new Set())} className="text-sm font-medium text-ink-500 hover:text-ink-900">
-            Cancel
+          <button onClick={() => setMultiSelect(new Set())} className="text-sm font-medium text-ink-500 hover:text-ink-900 transition-colors">
+            Clear Selection
           </button>
         </div>
       )}
@@ -235,3 +289,4 @@ export default function CvRankingPage() {
     </div>
   );
 }
+

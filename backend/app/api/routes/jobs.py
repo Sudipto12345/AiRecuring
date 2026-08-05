@@ -19,6 +19,19 @@ router = APIRouter(
 )
 
 
+from pydantic import BaseModel
+
+from app.services.nlp.job_parser import parse_job_description
+
+class ParseDescriptionRequest(BaseModel):
+    description: str
+
+
+@router.post("/parse-description")
+async def parse_description_endpoint(payload: ParseDescriptionRequest):
+    return parse_job_description(payload.description)
+
+
 @router.get("/stats", response_model=JobStats)
 async def stats(user: User = Depends(company_user)):
     rows = await Job.find(Job.company_id == user.company_id).to_list()

@@ -45,6 +45,8 @@ export default function CandidatesPage() {
 
   const [autoRefresh, setAutoRefresh] = useState(true);
 
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
   const load = useCallback(async () => {
     const [c, j, s] = await Promise.all([
       api<Candidate[]>("/candidates?sort=score"),
@@ -65,6 +67,17 @@ export default function CandidatesPage() {
     }, 15000);
     return () => clearInterval(timer);
   }, [load, autoRefresh]);
+
+  useEffect(() => {
+    const handleCandidateUpdated = () => {
+      load();
+      setToastMessage("Candidate list updated");
+      setTimeout(() => setToastMessage(null), 4000);
+    };
+
+    window.addEventListener("candidate.updated", handleCandidateUpdated);
+    return () => window.removeEventListener("candidate.updated", handleCandidateUpdated);
+  }, [load]);
 
   function exportCSV() {
     const headers = ["Name", "Email", "Phone", "Job Title", "Stage", "Overall Score", "Experience (Yrs)", "Education"];
@@ -411,6 +424,13 @@ export default function CandidatesPage() {
       </div>
 
       <UploadDialog open={uploadOpen} onClose={() => setUploadOpen(false)} jobs={jobs} onDone={() => load()} />
+
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-emerald-900 border border-emerald-500/40 px-4 py-2.5 text-xs font-semibold text-emerald-100 shadow-xl animate-in fade-in slide-in-from-bottom-4">
+          <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+          {toastMessage}
+        </div>
+      )}
     </div>
   );
 }

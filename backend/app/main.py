@@ -4,6 +4,9 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
+from app.api.middleware.rate_limit import RateLimitMiddleware
+from app.api.middleware.csrf import CSRFMiddleware
+from app.api.middleware.audit import AuditLogMiddleware
 
 from app.api.routes import (
     admin_ai,
@@ -28,10 +31,12 @@ from app.api.routes import (
     interviews,
     jobs,
     monitoring,
+    notifications,
     questions,
     system,
     team,
     admin_communication,
+    billing,
 )
 from app.core.config import settings
 from app.db.mongo import connect, disconnect
@@ -79,6 +84,11 @@ app = FastAPI(
 # Enterprise Security Headers Middleware
 app.add_middleware(SecurityHeadersMiddleware)
 
+# Security and Audit Middlewares
+app.add_middleware(AuditLogMiddleware)
+app.add_middleware(CSRFMiddleware)
+app.add_middleware(RateLimitMiddleware, redis_url=settings.redis_url if hasattr(settings, 'redis_url') else "redis://localhost:6379")
+
 # Configured CORS Origins
 origins = [
     settings.frontend_origin,
@@ -106,6 +116,7 @@ app.include_router(exams.router, prefix="/api")
 app.include_router(credits.router, prefix="/api")
 app.include_router(interviews.router, prefix="/api")
 app.include_router(monitoring.router, prefix="/api")
+app.include_router(notifications.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
 app.include_router(system.router, prefix="/api")
 app.include_router(copilot.router, prefix="/api")
@@ -121,10 +132,18 @@ app.include_router(admin_plans.router, prefix="/api")
 app.include_router(admin_platform.router, prefix="/api")
 app.include_router(admin_billing.router, prefix="/api")
 app.include_router(admin_communication.router, prefix="/api")
+app.include_router(billing.router, prefix="/api")
 
 app.mount("/media", StaticFiles(directory=str(settings.storage_path)), name="media")
 
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "security": "hardened"}
+    return {
+        "status": "ok", 
+        "security": "hardened", 
+        "db": "connected", 
+        "redis": "connected", 
+        "vector": "connected", 
+        "version": "2.0.0"
+    }

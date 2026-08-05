@@ -10,8 +10,22 @@ from app.models.subscription import Subscription
 from app.models.user import User
 from app.schemas.admin import AnnouncementCreate, FeatureFlagUpdate, MaintenanceUpdate, RoleInfo
 from app.services import audit, plans as plans_service
+from app.models.platform_config import PlatformConfig
+from cryptography.fernet import Fernet
+import stripe
+import os
 
 router = APIRouter(prefix="/admin", tags=["super-admin-platform"], dependencies=[Depends(super_admin)])
+
+# A simple encryption helper for the secret keys
+ENCRYPTION_KEY = os.getenv("PLATFORM_ENCRYPTION_KEY", Fernet.generate_key().decode())
+fernet = Fernet(ENCRYPTION_KEY.encode())
+
+def encrypt_val(val: str) -> str:
+    return fernet.encrypt(val.encode()).decode()
+
+def decrypt_val(val: str) -> str:
+    return fernet.decrypt(val.encode()).decode()
 
 DEFAULT_FLAGS = {
     "ai_cv_ranking": True,
@@ -142,3 +156,43 @@ async def active_subscriptions():
             "updated_at": s.updated_at,
         })
     return out
+
+
+from pydantic import BaseModel
+
+class StripeConfigUpdate(BaseModel):
+    secret_key: str
+    webhook_secret: str
+
+@router.get("/settings/stripe")
+async def get_stripe_settings():
+    config = await PlatformConfig.find_one(PlatformConfig.key == "stripe")
+    if not config:
+        return {"secret_key": None, "webhook_secret": None}
+    
+    # Mask keys
+    sk = decrypt_val(config.value.get("secret_key", ""))
+    wh = decrypt_val(config.value.get("webhook_secret", ""))
+    
+    sk_masked = f"sk_...{sk[-4:]}" if sk else None
+    wh_masked = f"whsec_...{wh[-4:]}" if wh else None
+    
+    return {"secret_key": sk_masked, "webhook_secret": wh_masked}
+
+@router.put("/settings/stripe")
+async def update_stripe_settings(payload: StripeConfigUpdate, request: Request, admin_user: User = Depends(super_admin)):
+    config = await PlatformConfig.find_one(PlatformConfig.key == "stripe")
+    if not config:
+        config = PlatformConfig(key="stripe", value={})
+    
+    config.value["secret_key"] = encrypt_val(payload.secret_key)
+    config.value["webhook_secret"] = encrypt_val(payload.webhook_secret)
+    await config.save()
+    
+    # Reload stripe client
+    stripe.api_key = payload.secret_key
+    # Assuming the billing webhook reads webhook_secret from somewhere, we can update it or rely on it being loaded dynamically.
+    os.environ["STRIPE_WEBHOOK_SECRET"] = payload.webhook_secret
+    
+    await audit.record(admin_user, "platform.stripe_settings_updated", ip=_client_ip(request))
+    return {"detail": "Stripe settings updated"}
