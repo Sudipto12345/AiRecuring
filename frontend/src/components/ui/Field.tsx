@@ -7,7 +7,7 @@ export const Input = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTML
     <input
       ref={ref}
       className={cn(
-        "h-10 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink-900 placeholder:text-ink-400 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100",
+        "h-10 w-full rounded-lg border border-line bg-white dark:bg-zinc-900 dark:border-zinc-700 px-3 text-sm text-ink-900 dark:text-zinc-100 placeholder:text-ink-400 dark:placeholder:text-zinc-500 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:focus:ring-brand-900/50 focus-visible:ring-2 focus-visible:ring-brand-500",
         className,
       )}
       {...props}
@@ -21,7 +21,7 @@ export const Select = forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<H
     <select
       ref={ref}
       className={cn(
-        "h-10 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink-700 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100",
+        "h-10 w-full rounded-lg border border-line bg-white dark:bg-zinc-900 dark:border-zinc-700 px-3 text-sm text-ink-700 dark:text-zinc-200 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:focus:ring-brand-900/50 focus-visible:ring-2 focus-visible:ring-brand-500",
         className,
       )}
       {...props}
@@ -37,7 +37,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttrib
     <textarea
       ref={ref}
       className={cn(
-        "w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink-900 placeholder:text-ink-400 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100",
+        "w-full rounded-lg border border-line bg-white dark:bg-zinc-900 dark:border-zinc-700 px-3 py-2 text-sm text-ink-900 dark:text-zinc-100 placeholder:text-ink-400 dark:placeholder:text-zinc-500 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:focus:ring-brand-900/50 focus-visible:ring-2 focus-visible:ring-brand-500",
         className,
       )}
       {...props}
@@ -48,7 +48,7 @@ Textarea.displayName = "Textarea";
 
 export function Label({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) {
   return (
-    <label htmlFor={htmlFor} className="mb-1.5 block text-xs font-medium text-ink-700">
+    <label htmlFor={htmlFor} className="mb-1.5 block text-xs font-medium text-ink-700 dark:text-zinc-300">
       {children}
     </label>
   );

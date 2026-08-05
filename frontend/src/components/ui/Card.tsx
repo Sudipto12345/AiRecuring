@@ -11,15 +11,15 @@ export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
       className={cn(
         // Layout & shape
         'relative rounded-2xl overflow-hidden',
-        // Surface
-        'bg-white border border-slate-100',
-        // Shadow
-        'shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.04)]',
-        // Hover transition
-        'transition-shadow duration-300',
+        // Surface & Glassmorphism
+        'bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border border-slate-200/60 dark:border-zinc-800/80',
+        // Shadow & Depth
+        'shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.04)] dark:shadow-none',
+        // Micro-interaction transition
+        'transition-all duration-300 hover:border-slate-300/80 dark:hover:border-zinc-700/80',
         // Inner top highlight (::before)
         'before:absolute before:inset-x-0 before:top-0 before:h-px',
-        'before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent',
+        'before:bg-gradient-to-r before:from-transparent before:via-white/60 dark:before:via-zinc-700/60 before:to-transparent',
         'before:pointer-events-none',
         className,
       )}
@@ -47,12 +47,12 @@ export function CardHeader({ title, subtitle, action, badge, className }: CardHe
       <div className="min-w-0 flex-1">
         {title && (
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-[16px] font-bold text-ink-900 leading-snug">{title}</h3>
+            <h3 className="text-[16px] font-bold text-ink-900 dark:text-zinc-100 leading-snug">{title}</h3>
             {badge && <span className="shrink-0">{badge}</span>}
           </div>
         )}
         {subtitle && (
-          <p className="mt-1 text-xs text-ink-500 leading-relaxed">{subtitle}</p>
+          <p className="mt-1 text-xs text-ink-500 dark:text-zinc-400 leading-relaxed">{subtitle}</p>
         )}
       </div>
       {action && <div className="shrink-0">{action}</div>}
@@ -76,7 +76,7 @@ export function CardFooter({ className, ...props }: React.HTMLAttributes<HTMLDiv
   return (
     <div
       className={cn(
-        'border-t border-slate-100 px-5 py-3 flex items-center justify-between',
+        'border-t border-slate-100 dark:border-zinc-800/80 px-5 py-3 flex items-center justify-between',
         className,
       )}
       {...props}
@@ -89,5 +89,5 @@ export function CardFooter({ className, ...props }: React.HTMLAttributes<HTMLDiv
  * Horizontal rule with consistent card horizontal padding.
  */
 export function CardDivider({ className, ...props }: React.HTMLAttributes<HTMLHRElement>) {
-  return <hr className={cn('border-slate-100 mx-5', className)} {...props} />;
+  return <hr className={cn('border-slate-100 dark:border-zinc-800/80 mx-5', className)} {...props} />;
 }

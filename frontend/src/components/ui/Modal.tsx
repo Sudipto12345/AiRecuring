@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useId } from "react";
 import { X } from "lucide-react";
 
 export function Modal({
@@ -17,15 +18,42 @@ export function Modal({
   children: React.ReactNode;
   size?: string;
 }) {
+  const titleId = useId();
   const isVisible = open !== undefined ? open : isOpen;
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isVisible) {
+        onClose();
+      }
+    };
+    if (isVisible) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isVisible, onClose]);
+
   if (!isVisible) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-8">
-      <div className="fixed inset-0 bg-ink-900/40 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative z-10 w-full ${size} animate-drawer rounded-2xl bg-white shadow-pop`}>
-        <div className="flex items-center justify-between border-b border-line px-5 py-4">
-          <h3 className="text-base font-semibold text-ink-900">{title}</h3>
-          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-400 hover:bg-slate-100 hover:text-ink-700">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-8"
+    >
+      <div
+        className="fixed inset-0 bg-ink-900/40 backdrop-blur-sm dark:bg-black/60"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <div className={`relative z-10 w-full ${size} animate-drawer rounded-2xl bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 shadow-pop`}>
+        <div className="flex items-center justify-between border-b border-line dark:border-zinc-800 px-5 py-4">
+          <h3 id={titleId} className="text-base font-semibold text-ink-900 dark:text-zinc-100">{title}</h3>
+          <button
+            onClick={onClose}
+            aria-label="Close modal"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-400 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-ink-700 dark:hover:text-zinc-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>
