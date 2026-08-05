@@ -7,6 +7,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from app.api.middleware.rate_limit import RateLimitMiddleware
 from app.api.middleware.csrf import CSRFMiddleware
 from app.api.middleware.audit import AuditLogMiddleware
+from app.api.middleware.nosql import NoSQLInjectionMiddleware
+from app.api.middleware.device_fingerprint import DeviceFingerprintMiddleware
 
 from app.api.routes import (
     admin_ai,
@@ -37,6 +39,7 @@ from app.api.routes import (
     team,
     admin_communication,
     billing,
+    payments,
 )
 from app.core.config import settings
 from app.db.mongo import connect, disconnect
@@ -87,6 +90,8 @@ app.add_middleware(SecurityHeadersMiddleware)
 # Security and Audit Middlewares
 app.add_middleware(AuditLogMiddleware)
 app.add_middleware(CSRFMiddleware)
+app.add_middleware(NoSQLInjectionMiddleware)
+app.add_middleware(DeviceFingerprintMiddleware)
 app.add_middleware(RateLimitMiddleware, redis_url=settings.redis_url if hasattr(settings, 'redis_url') else "redis://localhost:6379")
 
 # Configured CORS Origins
@@ -133,17 +138,34 @@ app.include_router(admin_platform.router, prefix="/api")
 app.include_router(admin_billing.router, prefix="/api")
 app.include_router(admin_communication.router, prefix="/api")
 app.include_router(billing.router, prefix="/api")
+app.include_router(payments.router, prefix="/api")
 
 app.mount("/media", StaticFiles(directory=str(settings.storage_path)), name="media")
 
 
 @app.get("/api/health")
 async def health():
+    import asyncio
+    from app.db import mongo
+    from app.db import redis as redis_db
+    
+    mongo_ok, redis_ok = await asyncio.gather(
+        mongo.ping(),
+        redis_db.ping(),
+        return_exceptions=True
+    )
+    
+    db_status = "connected" if isinstance(mongo_ok, bool) and mongo_ok else "error"
+    redis_status = "connected" if isinstance(redis_ok, bool) and redis_ok else "error"
+    
+    status = "ok" if db_status == "connected" and redis_status == "connected" else "error"
+    
     return {
-        "status": "ok", 
-        "security": "hardened", 
-        "db": "connected", 
-        "redis": "connected", 
-        "vector": "connected", 
+        "status": status,
+        "security": "hardened",
+        "db": db_status,
+        "redis": redis_status,
+        "queue": redis_status,
+        "vector": "connected",
         "version": "2.0.0"
     }

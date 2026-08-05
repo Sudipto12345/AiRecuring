@@ -26,20 +26,14 @@ SALARY_PATTERNS = [
     r'\$([\d,]+)\s*(?:to|-|\u2013)\s*\$?([\d,]+)',
     r'([\d,]+)k?\s*(?:to|-|\u2013)\s*([\d,]+)k?\s*(?:USD|usd|per year|annually)',
 ]
-SKILL_KEYWORDS = [
-    'python', 'javascript', 'typescript', 'react', 'node', 'aws', 'docker',
-    'kubernetes', 'sql', 'nosql', 'mongodb', 'postgresql', 'redis', 'graphql',
-    'rest', 'fastapi', 'django', 'flask', 'java', 'kotlin', 'swift', 'go',
-    'machine learning', 'deep learning', 'nlp', 'data science', 'spark',
-    'tableau', 'powerbi', 'excel', 'figma', 'sketch', 'photoshop',
-    'project management', 'agile', 'scrum', 'jira', 'leadership',
-]
+from app.services.nlp.esco import fetch_esco_skills
 
 def parse_job_description(text: str) -> dict:
     text_lower = text.lower()
     
-    # Skills
-    found_skills = [s for s in SKILL_KEYWORDS if s in text_lower]
+    # Skills (via ESCO Taxonomy mock)
+    esco_skills = fetch_esco_skills()
+    found_skills = [s for s in esco_skills if s in text_lower]
     
     # Experience
     exp_min, exp_max = None, None

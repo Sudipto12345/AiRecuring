@@ -31,7 +31,7 @@ async def _unique_slug(name: str) -> str:
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-async def register(payload: RegisterRequest, response: Response):
+async def register(payload: RegisterRequest, request: Request, response: Response):
     if await User.find_one(User.email == payload.email):
         raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
 
@@ -54,14 +54,15 @@ async def register(payload: RegisterRequest, response: Response):
     if settings.new_company_credits > 0:
         await grant(str(company.id), settings.new_company_credits, "Welcome credits")
 
-    token = create_access_token(str(admin.id), {"role": admin.role, "cid": admin.company_id})
-    refresh_token = create_refresh_token(str(admin.id), {"role": admin.role, "cid": admin.company_id})
+    fp = getattr(request.state, "fingerprint", "")
+    token = create_access_token(str(admin.id), {"role": admin.role, "cid": admin.company_id, "fp": fp})
+    refresh_token = create_refresh_token(str(admin.id), {"role": admin.role, "cid": admin.company_id, "fp": fp})
     response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, max_age=30*24*60*60, samesite="lax", secure=True)
     return TokenResponse(access_token=token)
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(payload: LoginRequest, response: Response):
+async def login(payload: LoginRequest, request: Request, response: Response):
     user = await User.find_one(User.email == payload.email)
     if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid email or password")
@@ -87,8 +88,9 @@ async def login(payload: LoginRequest, response: Response):
                     "ON_HOLD: Your account is on hold. Please contact support.",
                 )
 
-    token = create_access_token(str(user.id), {"role": user.role, "cid": user.company_id})
-    refresh_token = create_refresh_token(str(user.id), {"role": user.role, "cid": user.company_id})
+    fp = getattr(request.state, "fingerprint", "")
+    token = create_access_token(str(user.id), {"role": user.role, "cid": user.company_id, "fp": fp})
+    refresh_token = create_refresh_token(str(user.id), {"role": user.role, "cid": user.company_id, "fp": fp})
     response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, max_age=30*24*60*60, samesite="lax", secure=True)
     return TokenResponse(access_token=token)
 
@@ -110,12 +112,16 @@ async def refresh(request: Request, response: Response):
     if not payload:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid refresh token")
         
+    if payload.get("fp") and payload.get("fp") != getattr(request.state, "fingerprint", ""):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid device fingerprint")
+
     user_id = payload.get("sub")
     role = payload.get("role")
     cid = payload.get("cid")
+    fp = getattr(request.state, "fingerprint", "")
     
-    new_access = create_access_token(user_id, {"role": role, "cid": cid})
-    new_refresh = create_refresh_token(user_id, {"role": role, "cid": cid})
+    new_access = create_access_token(user_id, {"role": role, "cid": cid, "fp": fp})
+    new_refresh = create_refresh_token(user_id, {"role": role, "cid": cid, "fp": fp})
     
     response.set_cookie(key="refresh_token", value=new_refresh, httponly=True, max_age=30*24*60*60, samesite="lax", secure=True)
     return TokenResponse(access_token=new_access)

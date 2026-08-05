@@ -14,7 +14,19 @@ def get_redis() -> aioredis.Redis | None:
     global _client
     if _client is None:
         try:
-            _client = aioredis.from_url(settings.redis_url, encoding="utf-8", decode_responses=True)
+            if settings.redis_url.startswith("sentinel://"):
+                from redis.asyncio.sentinel import Sentinel
+                import urllib.parse
+                parsed = urllib.parse.urlparse(settings.redis_url)
+                host = parsed.hostname
+                port = parsed.port or 26379
+                path_parts = parsed.path.strip("/").split("/")
+                master_name = path_parts[0] if path_parts else "mymaster"
+                db = int(path_parts[1]) if len(path_parts) > 1 else 0
+                sentinel = Sentinel([(host, port)], decode_responses=True)
+                _client = sentinel.master_for(master_name, encoding="utf-8", db=db)
+            else:
+                _client = aioredis.from_url(settings.redis_url, encoding="utf-8", decode_responses=True)
         except Exception:
             return None
     return _client

@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CheckCircle2, Download, HelpCircle, Layers, Lock, Plus, Sparkles, Trash2, Upload, X } from "lucide-react";
+import { CheckCircle2, Download, HelpCircle, Layers, Lock, Plus, Sparkles, Trash2, Upload, X, BarChart2 } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from "recharts";
 
 import { PageHero } from "@/components/ui/PageHero";
 import { SkeletonTable } from "@/components/ui/SkeletonTable";
@@ -500,8 +501,9 @@ function QuestionModal({ open, onClose, onCreated }: { open: boolean; onClose: (
 
 function AIQuestionGeneratorModal({ open, onClose, onGenerated }: { open: boolean; onClose: () => void; onGenerated: () => void }) {
   const [topic, setTopic] = useState("");
-  const [count, setCount] = useState(3);
-  const [difficulty, setDifficulty] = useState("medium");
+  const [cluster, setCluster] = useState("Software Engineering");
+  const [count, setCount] = useState(5);
+  const [difficulty, setDifficulty] = useState("mixed");
   const [busy, setBusy] = useState(false);
 
   async function generate() {
@@ -510,7 +512,7 @@ function AIQuestionGeneratorModal({ open, onClose, onGenerated }: { open: boolea
     try {
       await api("/questions/ai_generate", {
         method: "POST",
-        body: { topic: topic.trim(), num_questions: count, difficulty },
+        body: { topic: topic.trim(), num_questions: count, difficulty, cluster },
       });
       onGenerated();
       onClose();
@@ -522,29 +524,76 @@ function AIQuestionGeneratorModal({ open, onClose, onGenerated }: { open: boolea
     }
   }
 
+  const clusters = ["Software Engineering", "Data Science", "DevOps", "Product Management", "Design"];
+
+  const difficultyData = useMemo(() => {
+    if (difficulty === "easy") return [{ name: "Easy", val: count, color: "#10b981" }, { name: "Med", val: 0, color: "#f59e0b" }, { name: "Hard", val: 0, color: "#ef4444" }];
+    if (difficulty === "medium") return [{ name: "Easy", val: 0, color: "#10b981" }, { name: "Med", val: count, color: "#f59e0b" }, { name: "Hard", val: 0, color: "#ef4444" }];
+    if (difficulty === "hard") return [{ name: "Easy", val: 0, color: "#10b981" }, { name: "Med", val: 0, color: "#f59e0b" }, { name: "Hard", val: count, color: "#ef4444" }];
+    // Mixed
+    const easy = Math.floor(count * 0.3);
+    const hard = Math.floor(count * 0.2);
+    const med = count - easy - hard;
+    return [
+      { name: "Easy", val: easy, color: "#10b981" },
+      { name: "Med", val: med, color: "#f59e0b" },
+      { name: "Hard", val: hard, color: "#ef4444" }
+    ];
+  }, [difficulty, count]);
+
   return (
-    <Modal open={open} onClose={onClose} title="AWS Bedrock AI Question Generator" size="max-w-md">
-      <div className="space-y-4">
-        <div>
-          <Label>Target Skill / Topic</Label>
-          <Input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="e.g. Python AsyncIO, React Server Components, Docker Security" />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <Label>Question Count</Label>
-            <Input type="number" min={1} max={10} value={count} onChange={(e) => setCount(Number(e.target.value))} />
+    <Modal open={open} onClose={onClose} title="AWS Bedrock AI Question Generator" size="max-w-xl">
+      <div className="space-y-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-4">
+            <div>
+              <Label>Target Skill / Topic</Label>
+              <Input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="e.g. React Hooks, Docker..." />
+            </div>
+            <div>
+              <Label>Domain Cluster</Label>
+              <Select value={cluster} onChange={(e) => setCluster(e.target.value)}>
+                {clusters.map((c) => <option key={c} value={c}>{c}</option>)}
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Count</Label>
+                <Input type="number" min={1} max={20} value={count} onChange={(e) => setCount(Number(e.target.value))} />
+              </div>
+              <div>
+                <Label>Profile</Label>
+                <Select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
+                  <option value="mixed">Mixed</option>
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </Select>
+              </div>
+            </div>
           </div>
-          <div>
-            <Label>Difficulty</Label>
-            <Select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
-              <option value="easy">Easy</option>
-              <option value="medium">Medium</option>
-              <option value="hard">Hard</option>
-            </Select>
+          
+          <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 flex flex-col justify-center items-center">
+            <h4 className="text-xs font-semibold text-slate-500 mb-2 w-full flex items-center"><BarChart2 className="w-4 h-4 mr-1"/> Expected Distribution</h4>
+            <div className="w-full h-32">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={difficultyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <RechartsTooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}/>
+                  <Bar dataKey="val" radius={[4, 4, 0, 0]}>
+                    {difficultyData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
+        
         <div className="rounded-xl bg-emerald-50/90 p-3 text-xs text-emerald-800 border border-emerald-200 font-medium">
-          ⚡ Powered by AWS Bedrock AI Engine (Claude 3 Haiku / Titan) with intelligent distractor options.
+          ⚡ Powered by AWS Bedrock AI Engine (Claude 3 / Titan) with intelligent distractor generation.
         </div>
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="secondary" onClick={onClose} disabled={busy}>Cancel</Button>

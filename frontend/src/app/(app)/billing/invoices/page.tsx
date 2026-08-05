@@ -12,11 +12,12 @@ import { Search, Download, FileText } from "lucide-react";
 import { getToken } from "@/lib/api";
 
 interface Invoice {
-  id: string;
-  invoice_number: string;
-  created_at: string;
-  amount_due: number;
-  credits_added: number;
+  _id: string;
+  id?: string;
+  stripe_invoice_id: string;
+  issued_at: string;
+  amount_usd: number;
+  credits_purchased: number;
   status: "paid" | "pending" | "failed";
 }
 
@@ -27,7 +28,7 @@ export default function InvoicesPage() {
 
   const filteredInvoices = invoices?.filter((inv) => {
     if (filter !== "all" && inv.status !== filter) return false;
-    if (search && !inv.invoice_number.toLowerCase().includes(search.toLowerCase())) return false;
+    if (search && !(inv.id || inv._id).toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
 
@@ -57,10 +58,10 @@ export default function InvoicesPage() {
     if (!filteredInvoices?.length) return;
     const header = ["Invoice #", "Date", "Amount", "Credits", "Status"];
     const rows = filteredInvoices.map((inv) => [
-      inv.invoice_number,
-      new Date(inv.created_at).toLocaleDateString(),
-      `$${(inv.amount_due / 100).toFixed(2)}`,
-      inv.credits_added.toString(),
+      inv.id || inv._id,
+      new Date(inv.issued_at).toLocaleDateString(),
+      `$${inv.amount_usd.toFixed(2)}`,
+      (inv.credits_purchased || 0).toString(),
       inv.status,
     ]);
     const csvContent = "data:text/csv;charset=utf-8," + [header, ...rows].map((e) => e.join(",")).join("\n");
@@ -136,11 +137,11 @@ export default function InvoicesPage() {
               </thead>
               <tbody>
                 {filteredInvoices.map((inv) => (
-                  <tr key={inv.id} className="border-b border-[var(--color-border)] last:border-0 hover:bg-[var(--color-bg-alt)] transition-colors">
-                    <td className="py-4 px-4 font-medium text-[var(--color-text-primary)]">{inv.invoice_number}</td>
-                    <td className="py-4 px-4 text-[var(--color-text-secondary)]">{new Date(inv.created_at).toLocaleDateString()}</td>
-                    <td className="py-4 px-4 text-right text-[var(--color-text-primary)]">${(inv.amount_due / 100).toFixed(2)}</td>
-                    <td className="py-4 px-4 text-right text-[var(--color-text-secondary)]">{inv.credits_added}</td>
+                  <tr key={inv.id || inv._id} className="border-b border-[var(--color-border)] last:border-0 hover:bg-[var(--color-bg-alt)] transition-colors">
+                    <td className="py-4 px-4 font-medium text-[var(--color-text-primary)]">{inv.id || inv._id}</td>
+                    <td className="py-4 px-4 text-[var(--color-text-secondary)]">{new Date(inv.issued_at).toLocaleDateString()}</td>
+                    <td className="py-4 px-4 text-right text-[var(--color-text-primary)]">${inv.amount_usd.toFixed(2)}</td>
+                    <td className="py-4 px-4 text-right text-[var(--color-text-secondary)]">{inv.credits_purchased || 0}</td>
                     <td className="py-4 px-4 text-center">
                       <Badge
                         variant={inv.status === "paid" ? "success" : inv.status === "pending" ? "warning" : "error"}
@@ -149,7 +150,7 @@ export default function InvoicesPage() {
                       </Badge>
                     </td>
                     <td className="py-4 px-4 text-right">
-                      <Button variant="ghost" size="sm" onClick={(e) => handleDownloadPdf(inv.id, e)}>
+                      <Button variant="ghost" size="sm" onClick={(e) => handleDownloadPdf(inv.id || inv._id, e)}>
                         <Download className="h-4 w-4" />
                       </Button>
                     </td>

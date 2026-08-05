@@ -12,7 +12,7 @@ class Settings(BaseSettings):
 
     jwt_secret: str = "change-me"
     jwt_alg: str = "HS256"
-    access_token_ttl_min: int = 60 * 24 * 30
+    access_token_ttl_min: int = 15
 
     superadmin_email: str = "owner@airecruit.io"
     superadmin_password: str = "owner12345"

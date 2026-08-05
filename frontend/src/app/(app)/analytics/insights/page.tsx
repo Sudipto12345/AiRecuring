@@ -8,19 +8,11 @@ import { StatWidget } from "@/components/admin/StatWidget";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SkeletonTable } from "@/components/ui/SkeletonTable";
 import { Award, Sparkles, TrendingUp, Users } from "lucide-react";
-import { api } from "@/lib/api";
+import { useApi } from "@/lib/swr";
 import type { AnalyticsSummary } from "@/lib/types";
 
 export default function AiInsightsPage() {
-  const [data, setData] = useState<AnalyticsSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    api<AnalyticsSummary>("/analytics/summary")
-      .then(setData)
-      .catch((err) => console.error("Failed to load analytics summary", err))
-      .finally(() => setLoading(false));
-  }, []);
+  const { data, isLoading: loading } = useApi<AnalyticsSummary>("/analytics/summary");
 
   const totals = data?.totals ?? {};
   const skills = (data?.top_skills ?? []).map((s) => ({ label: s.skill, count: s.count }));

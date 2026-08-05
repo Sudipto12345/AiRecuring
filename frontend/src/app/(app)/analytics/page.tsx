@@ -8,19 +8,11 @@ import { StatCard } from "@/components/ui/StatCard";
 import { SkeletonTable } from "@/components/ui/SkeletonTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ArrowRight, BarChart3, Filter, LineChart, PieChart, Sparkles, TrendingUp, Users } from "lucide-react";
-import { api } from "@/lib/api";
+import { useApi } from "@/lib/swr";
 import type { AnalyticsSummary } from "@/lib/types";
 
 export default function AnalyticsMainPage() {
-  const [data, setData] = useState<AnalyticsSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    api<AnalyticsSummary>("/analytics/summary")
-      .then(setData)
-      .catch((err) => console.error("Failed to load analytics overview", err))
-      .finally(() => setLoading(false));
-  }, []);
+  const { data, isLoading: loading } = useApi<AnalyticsSummary>("/analytics/summary");
 
   const totals = data?.totals ?? {};
   const pipeline = data?.pipeline ?? [];

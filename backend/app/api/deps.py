@@ -8,7 +8,10 @@ from app.models.user import User
 _bearer = HTTPBearer(auto_error=False)
 
 
+from fastapi import Request
+
 async def current_user(
+    request: Request,
     creds: HTTPAuthorizationCredentials | None = Depends(_bearer),
 ) -> User:
     if creds is None:
@@ -16,6 +19,8 @@ async def current_user(
     payload = decode_token(creds.credentials)
     if not payload or "sub" not in payload:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid token")
+    if payload.get("fp") and payload.get("fp") != getattr(request.state, "fingerprint", ""):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid device fingerprint")
     user = await User.get(payload["sub"])
     if user is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "User no longer exists")

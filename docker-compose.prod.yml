@@ -36,6 +36,23 @@ services:
       retries: 5
       start_period: 5s
 
+  redis-sentinel:
+    image: bitnami/redis-sentinel:latest
+    container_name: airecruit-redis-sentinel
+    environment:
+      - REDIS_MASTER_HOST=redis
+      - REDIS_MASTER_PORT_NUMBER=6379
+      - REDIS_MASTER_SET=mymaster
+      - REDIS_SENTINEL_QUORUM=1
+    ports:
+      - "26379:26379"
+    networks:
+      - airecruit-network
+    depends_on:
+      redis:
+        condition: service_healthy
+
+
   minio:
     image: minio/minio:latest
     container_name: airecruit-minio-prod
@@ -74,14 +91,15 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: airecruit-backend-prod
+    deploy:
+      replicas: 3
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8001-8003:8000"
     environment:
       MONGO_URI: mongodb://airecruit:airecruit_prod_password@mongodb:27017/?authSource=admin
       MONGO_DB: airecruit
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: sentinel://redis-sentinel:26379/mymaster/0
       MINIO_ENDPOINT: minio:9000
       MINIO_ACCESS_KEY: airecruit
       MINIO_SECRET_KEY: airecruit123

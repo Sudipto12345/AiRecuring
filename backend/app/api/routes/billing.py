@@ -8,6 +8,7 @@ from app.models.invoice import Invoice
 from app.models.subscription import Subscription
 from app.core.config import settings
 from datetime import datetime, timezone
+from app.services.pdf_service import PDFService
 
 router = APIRouter(prefix="/billing", tags=["billing"])
 
@@ -43,6 +44,18 @@ async def stripe_webhook(request: Request):
                 inv.status = "paid"
                 inv.paid_at = datetime.now(timezone.utc)
                 await inv.save()
+            else:
+                # Create a new invoice record for the credit purchase
+                new_inv = Invoice(
+                    company_id=company_id,
+                    stripe_invoice_id=intent.get("invoice") or intent.get("id"),
+                    amount_usd=intent.get("amount", 0) / 100.0,
+                    credits_purchased=credits,
+                    status="paid",
+                    issued_at=datetime.now(timezone.utc),
+                    paid_at=datetime.now(timezone.utc)
+                )
+                await new_inv.insert()
 
     elif event["type"] == "invoice.payment_failed":
         inv_obj = event["data"]["object"]
@@ -65,39 +78,6 @@ async def stripe_webhook(request: Request):
 
     return {"status": "success"}
 
-@router.post("/checkout")
-async def create_checkout(data: dict, user: User = Depends(company_user)):
-    credits = data.get("credits", 0)
-    price_per_credit = data.get("price_per_credit", 1.0)
-    
-    if not credits:
-        raise HTTPException(400, "Missing credits")
-        
-    try:
-        session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=[{
-                'price_data': {
-                    'currency': 'usd',
-                    'product_data': {
-                        'name': 'Platform Credits',
-                    },
-                    'unit_amount': int(price_per_credit * 100),
-                },
-                'quantity': credits,
-            }],
-            mode='payment',
-            success_url=f"{settings.frontend_url}/settings/billing?success=true",
-            cancel_url=f"{settings.frontend_url}/settings/billing?canceled=true",
-            metadata={
-                "company_id": user.company_id,
-                "credits": credits
-            }
-        )
-        return {"checkout_url": session.url}
-    except Exception as e:
-        raise HTTPException(500, str(e))
-
 @router.get("/invoices")
 async def list_invoices(user: User = Depends(company_user)):
     invoices = await Invoice.find(Invoice.company_id == user.company_id).to_list()
@@ -105,6 +85,17 @@ async def list_invoices(user: User = Depends(company_user)):
 
 @router.get("/invoices/{id}/pdf")
 async def get_invoice_pdf(id: str, user: User = Depends(company_user)):
-    # This would stream from MinIO in a real app
-    # For now returning a dummy response
-    return {"detail": "PDF streaming not implemented yet"}
+    from bson import ObjectId
+    try:
+        inv = await Invoice.get(ObjectId(id))
+        if not inv or inv.company_id != user.company_id:
+            raise HTTPException(404, "Invoice not found")
+            
+        pdf_bytes = PDFService.generate_invoice_pdf(inv)
+        return StreamingResponse(
+            iter([pdf_bytes]),
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename=invoice_{inv.id}.pdf"}
+        )
+    except Exception as e:
+        raise HTTPException(500, str(e))

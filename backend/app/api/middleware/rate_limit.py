@@ -32,7 +32,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             try:
                 pipe.zremrangebyscore(key, 0, window_start)
                 pipe.zcard(key)
-                pipe.zadd(key, {str(current_time): current_time})
+                request_id = f"{current_time}:{id(request)}"
+                pipe.zadd(key, {request_id: current_time})
                 pipe.expire(key, 60)
                 results = await pipe.execute()
                 request_count = results[1]

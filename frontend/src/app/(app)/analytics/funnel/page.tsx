@@ -5,21 +5,13 @@ import { useEffect, useState } from "react";
 import { PageHero } from "@/components/ui/PageHero";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SkeletonTable } from "@/components/ui/SkeletonTable";
-import { api } from "@/lib/api";
+import { useApi } from "@/lib/swr";
 import type { AnalyticsSummary } from "@/lib/types";
 
 const COLORS = ["#2a7553", "#3a916a", "#8b5cf6", "#16a34a", "#d97706"];
 
 export default function HiringFunnelPage() {
-  const [data, setData] = useState<AnalyticsSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    api<AnalyticsSummary>("/analytics/summary")
-      .then(setData)
-      .catch((err) => console.error("Failed to fetch funnel data", err))
-      .finally(() => setLoading(false));
-  }, []);
+  const { data, isLoading: loading } = useApi<AnalyticsSummary>("/analytics/summary");
 
   const pipeline = data?.pipeline ?? [];
 

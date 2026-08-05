@@ -30,7 +30,7 @@ export default function CreditsPage() {
     setLoadingPkg(pkgId);
     const token = getToken();
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/billing/checkout`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments/checkout`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

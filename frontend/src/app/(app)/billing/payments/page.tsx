@@ -28,7 +28,7 @@ export default function PaymentsPage() {
     setLoadingPkg(pkgId);
     const token = getToken();
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/billing/checkout`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments/checkout`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -103,12 +103,12 @@ export default function PaymentsPage() {
                 </thead>
                 <tbody>
                   {invoices.map((inv) => (
-                    <tr key={inv.id} className="border-b border-[var(--color-border)] last:border-0 hover:bg-[var(--color-bg-alt)] transition-colors">
-                      <td className="py-4 px-4 text-[var(--color-text-secondary)]">{new Date(inv.created_at).toLocaleDateString()}</td>
+                    <tr key={inv.id || inv._id} className="border-b border-[var(--color-border)] last:border-0 hover:bg-[var(--color-bg-alt)] transition-colors">
+                      <td className="py-4 px-4 text-[var(--color-text-secondary)]">{new Date(inv.issued_at).toLocaleDateString()}</td>
                       <td className="py-4 px-4 font-medium text-[var(--color-text-primary)]">
-                        {inv.credits_added ? `Purchased ${inv.credits_added} Credits` : `Invoice ${inv.invoice_number}`}
+                        {inv.credits_purchased ? `Purchased ${inv.credits_purchased} Credits` : `Invoice ${inv.id || inv._id}`}
                       </td>
-                      <td className="py-4 px-4 text-right text-[var(--color-text-primary)]">${(inv.amount_due / 100).toFixed(2)}</td>
+                      <td className="py-4 px-4 text-right text-[var(--color-text-primary)]">${inv.amount_usd.toFixed(2)}</td>
                       <td className="py-4 px-4 text-center">
                         <Badge variant={inv.status === "paid" ? "success" : inv.status === "pending" ? "warning" : "error"}>
                           {inv.status}

@@ -31,8 +31,8 @@ import { Donut } from "@/components/charts/Donut";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
-import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { useApi } from "@/lib/swr";
 import type { AnalyticsSummary, Candidate, MonitoringSummary } from "@/lib/types";
 
 const PIPELINE_COLORS = ["#6366f1", "#7c6cf0", "#9b7bf0", "#22c55e", "#f59e0b"];
@@ -85,15 +85,10 @@ export default function DashboardPage() {
   const { session } = useAuth();
   const firstName = session?.user.name.split(" ")[0] ?? "there";
 
-  const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
-  const [monitoring, setMonitoring] = useState<MonitoringSummary | null>(null);
-  const [topCandidates, setTopCandidates] = useState<Candidate[]>([]);
-
-  useEffect(() => {
-    api<AnalyticsSummary>("/analytics/summary").then(setAnalytics).catch(() => {});
-    api<MonitoringSummary>("/monitoring/summary").then(setMonitoring).catch(() => {});
-    api<Candidate[]>("/candidates?sort=score").then((rows) => setTopCandidates(rows.slice(0, 5))).catch(() => {});
-  }, []);
+  const { data: analytics } = useApi<AnalyticsSummary>("/analytics/summary");
+  const { data: monitoring } = useApi<MonitoringSummary>("/monitoring/summary");
+  const { data: candidates } = useApi<Candidate[]>("/candidates?sort=score");
+  const topCandidates = candidates?.slice(0, 5) ?? [];
 
   const totals = analytics?.totals ?? {};
   const totalCandidates = Number(totals.candidates ?? 0);
